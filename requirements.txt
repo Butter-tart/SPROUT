@@ -1,3 +1,4 @@
 pillow
 # RPi.GPIO  # Uncomment when on Raspberry Pi
 # spidev    # Uncomment when on Raspberry Pi
+# evdev     # Uncomment when on Raspberry Pi

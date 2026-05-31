@@ -47,6 +47,12 @@ except ImportError:
 
 from pet_logic import SproutPet
 from renderer import Renderer
+try:
+    from input_handler import InputHandler
+    INPUT_AVAILABLE = True
+except ImportError:
+    INPUT_AVAILABLE = False
+    print("evdev library not found. Input handler disabled.")
 
 def check_hardware():
     """Diagnostic check for hardware interfaces."""
@@ -148,8 +154,67 @@ def main():
     # Loop mode if specified via arguments
     loop_mode = "--loop" in sys.argv
     
+    pet = SproutPet.load()
     epd = None
     
+    # Menu State
+    menu_active = False
+    menu_selection = 0
+    menu_options = ["Walk Timer", "Check-in", "Cancel"]
+    
+    def input_callback(event_type, value):
+        nonlocal menu_active, menu_selection, pet
+        
+        if event_type == 'KEY_DOWN':
+            print(f"Input: {value}")
+            if value == 'START':
+                menu_active = not menu_active
+            
+            elif menu_active:
+                if value == 'DPAD_Y' or value == 'BTN_1': # BTN_1 might be Up on some modes
+                    menu_selection = (menu_selection - 1) % len(menu_options)
+                elif value == 'BTN_2': # Down
+                    menu_selection = (menu_selection + 1) % len(menu_options)
+                elif value == 'A':
+                    # Select option
+                    selection = menu_options[menu_selection]
+                    if selection == "Walk Timer":
+                        if pet.is_walking:
+                            pet.stop_walk()
+                            print("Walking stopped.")
+                        else:
+                            pet.start_walk()
+                            print("Walking started!")
+                    elif selection == "Check-in":
+                        print("Check-in selected (Interactive only for now)")
+                    
+                    menu_active = False
+                    pet.save()
+            
+            elif value == 'A' and not menu_active:
+                # Shortcut to start/stop walk
+                if pet.is_walking:
+                    pet.stop_walk()
+                else:
+                    pet.start_walk()
+                pet.save()
+
+        elif event_type == 'ABS':
+            axis, axis_val = value
+            if menu_active:
+                if axis == 'DPAD_Y':
+                    if axis_val == -1: # Up
+                        menu_selection = (menu_selection - 1) % len(menu_options)
+                    elif axis_val == 1: # Down
+                        menu_selection = (menu_selection + 1) % len(menu_options)
+
+    # Start input handler
+    if INPUT_AVAILABLE:
+        input_handler = InputHandler()
+        input_handler.start(input_callback)
+    else:
+        print("Input handler skipped (evdev missing).")
+
     if EPD_AVAILABLE:
         try:
             print("Initializing display for loading screen...")
@@ -174,65 +239,15 @@ def main():
         while True:
             pet = SproutPet.load()
             pet.update()
-            
-            # Check if we are running in interactive mode or as a service
-            is_interactive = os.isatty(sys.stdin.fileno()) and not loop_mode
-            
-            if is_interactive:
-                print(f"Welcome back to {pet.name}'s mental health check-in!")
-                if pet.status == "Needs Sun":
-                    print(f"🌞 {pet.name} looks a bit pale. Maybe some sunshine would help?")
-                elif pet.status == "Stressed":
-                    print(f"🫂 It's been a tough day, hasn't it? {pet.name} is here for you.")
-                elif pet.status == "Sad":
-                    print(f"☁️ Sending you a big hug. You're doing your best.")
-                else:
-                    print(f"✨ {pet.name} is happy to see you!")
-
-                print(f"Current Status: {pet.status}")
-                print(f"Hap: {pet.happiness}% | Enr: {pet.energy}% | Str: {pet.stress}% | Sun: {pet.sunshine}%")
-            
-                print("\nHow are you feeling today? (1-5)")
-                print("1: Really tough")
-                print("2: Not so good")
-                print("3: Hanging in there")
-                print("4: Good")
-                print("5: Radiant!")
-            
-                try:
-                    score_str = input(">> ")
-                    if not score_str:
-                        score = 3
-                    else:
-                        score = int(score_str)
-                
-                    print("\nDid you manage to get some sunshine or step outside today? (y/n)")
-                    sun_input = input(">> ").lower()
-                    got_sun = sun_input == 'y'
-                
-                    if 1 <= score <= 5:
-                        pet.check_in(score, got_sun)
-                        if got_sun:
-                            print(f"Wonderful! That sunshine will do both you and {pet.name} a world of good.")
-                        else:
-                            print(f"That's okay. {pet.name} is proud of you for checking in anyway.")
-                    else:
-                        print("Invalid input, no check-in recorded.")
-                except ValueError:
-                    print("Invalid input, no check-in recorded.")
-                except EOFError:
-                    # Handle case where input is closed
-                    break
-            else:
-                if not loop_mode:
-                    print("\nNon-interactive mode: Skipping mood check-in.")
-
             pet.save()
             
             # Render the screen
             renderer = Renderer()
-            renderer.draw_pet(pet.status)
+            renderer.draw_pet(pet.to_dict())
             renderer.draw_stats(pet.to_dict())
+            
+            if menu_active:
+                renderer.draw_menu(menu_options, menu_selection)
             
             if EPD_AVAILABLE:
                 try:

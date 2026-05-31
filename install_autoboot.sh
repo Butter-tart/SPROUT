@@ -18,7 +18,7 @@ echo "Installing SPROUT autoboot service..."
 # 0. Install system dependencies
 echo "Installing system dependencies..."
 apt-get update
-apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5 spi-tools
+apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5 spi-tools python3-evdev
 
 # 1. Ensure SPI is enabled (non-interactive)
 if ! grep -q "dtparam=spi=on" /boot/config.txt; then
@@ -42,12 +42,12 @@ systemctl daemon-reload
 systemctl enable $SERVICE_NAME
 
 # 5. Ensure the user is in the correct groups for hardware access
-usermod -a -G spi,gpio,i2c $USER_NAME
+usermod -a -G spi,gpio,i2c,input $USER_NAME
 
 # 6. Inform the user
 echo "-------------------------------------------------------"
 echo "SPROUT autoboot service installed and enabled!"
-echo "User $USER_NAME added to spi, gpio, and i2c groups."
+echo "User $USER_NAME added to spi, gpio, i2c, and input groups."
 echo "It will start automatically on the next boot."
 echo "To start it now, run: sudo systemctl start $SERVICE_NAME"
 echo "To check status, run: sudo systemctl status $SERVICE_NAME"

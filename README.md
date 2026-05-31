@@ -4,10 +4,13 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
 
 ## Features
 - **Mood Check-ins**: Log your daily mental health state to help your Sprout grow.
-- **Sunshine Tracker**: SPROUT encourages you to go outside! Getting sunshine boosts both your and Sprout's happiness.
+- **Sunshine Tracker**: SPROUT encourages you to go outside! Getting sunshine boosts both your and Sprout's happiness and growth.
 - **Supportive Companion**: Updated messaging to be more compassionate on tough mental health days.
-- **Dynamic Character**: Sprout's appearance changes based on your check-ins, sunshine, and time.
-- **Animated Loading**: A hopping character greets you during startup using e-ink partial refreshes.
+- **Dynamic Character**: Sprout now grows from a tiny seedling into a beautiful flower as you care for it and yourself.
+- **Growth Stages**: Level up by checking in, going for walks, and getting sunshine.
+- **Animated Loading**: A hopping seedling greets you during startup using e-ink partial refreshes.
+- **8BitDo Zero 2 Support**: Use your controller to navigate menus and control functions.
+- **Walk Timer**: Start and stop a walk timer to track your outdoor activity and boost Sprout's health.
 - **E-Ink Optimized**: Low power consumption and easy on the eyes.
 
 ## Installation on Raspberry Pi
@@ -41,6 +44,32 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
    ```bash
    python3 src/main.py
    ```
+
+## 8BitDo Zero 2 Controller Setup
+
+1. **Pair your controller**:
+   - Hold `START` to turn on the controller (Blue light flashes).
+   - Hold `SELECT` for 3 seconds to enter pairing mode (Rapid flashing).
+   - On your Raspberry Pi, use `bluetoothctl`:
+     ```bash
+     bluetoothctl
+     scan on
+     # Find the MAC address of "8BitDo Zero 2"
+     pair [MAC_ADDRESS]
+     trust [MAC_ADDRESS]
+     connect [MAC_ADDRESS]
+     ```
+
+2. **Test the controller**:
+   ```bash
+   sudo python3 test_controller.py
+   ```
+   If buttons don't register, ensure your user is in the `input` group: `sudo usermod -a -G input $USER` and reboot.
+
+3. **Controller Usage**:
+   - **START**: Open/Close Menu.
+   - **A**: Select (in menu) or Shortcut to Start/Stop Walk.
+   - **DPAD / Buttons**: Navigate menu.
 
 ## Troubleshooting Display Issues
 If the e-ink screen is not updating:
