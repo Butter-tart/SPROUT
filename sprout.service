@@ -1,0 +1,14 @@
+[Unit]
+Description=SPROUT Mental Health Tamagotchi
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 src/main.py
+WorkingDirectory=/home/pi/SPROUT
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

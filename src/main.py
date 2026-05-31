@@ -21,22 +21,28 @@ def main():
     print(f"Current Status: {pet.status}")
     print(f"Happiness: {pet.happiness}% | Energy: {pet.energy}% | Stress: {pet.stress}%")
     
-    print("\nHow are you feeling today? (1-5)")
-    print("1: Not great")
-    print("2: A bit down")
-    print("3: Okay")
-    print("4: Good")
-    print("5: Fantastic!")
+    # Check if we are running in interactive mode or as a service
+    is_interactive = os.isatty(sys.stdin.fileno())
     
-    try:
-        score = int(input(">> "))
-        if 1 <= score <= 5:
-            pet.check_in(score)
-            print(f"Thanks for sharing! {pet.name} feels better now too.")
-        else:
+    if is_interactive:
+        print("\nHow are you feeling today? (1-5)")
+        print("1: Not great")
+        print("2: A bit down")
+        print("3: Okay")
+        print("4: Good")
+        print("5: Fantastic!")
+        
+        try:
+            score = int(input(">> "))
+            if 1 <= score <= 5:
+                pet.check_in(score)
+                print(f"Thanks for sharing! {pet.name} feels better now too.")
+            else:
+                print("Invalid input, no check-in recorded.")
+        except ValueError:
             print("Invalid input, no check-in recorded.")
-    except ValueError:
-        print("Invalid input, no check-in recorded.")
+    else:
+        print("\nNon-interactive mode: Skipping mood check-in.")
 
     pet.save()
     

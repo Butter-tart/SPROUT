@@ -34,6 +34,21 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
    python3 src/main.py
    ```
 
+## Autoboot Setup
+To make SPROUT start automatically when the Raspberry Pi powers on:
+
+1. **Make the install script executable**:
+   ```bash
+   chmod +x install_autoboot.sh
+   ```
+
+2. **Run the installation script**:
+   ```bash
+   sudo ./install_autoboot.sh
+   ```
+
+*Note: The service assumes the project is located at `/home/pi/SPROUT`. If you installed it elsewhere, please edit `sprout.service` before running the script.*
+
 ## Development / Mock Mode
 If running on a desktop, SPROUT will generate a `sprout_display_preview.png` file instead of trying to talk to an e-paper display.
 
