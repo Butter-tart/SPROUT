@@ -1,0 +1,43 @@
+# SPROUT: Mental Health Tamagotchi
+
+SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and Waveshare e-Paper displays.
+
+## Features
+- **Mood Check-ins**: Log your daily mental health state to help your Sprout grow.
+- **Dynamic Character**: Sprout's appearance changes based on your check-ins and time.
+- **E-Ink Optimized**: Low power consumption and easy on the eyes.
+
+## Installation on Raspberry Pi
+
+1. **Enable SPI**:
+   ```bash
+   sudo raspi-config
+   # Interface Options -> SPI -> Yes
+   ```
+
+2. **Install Dependencies**:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install python3-pip python3-pil python3-numpy
+   pip3 install spidev RPi.GPIO
+   ```
+
+3. **Install Waveshare Library**:
+   ```bash
+   git clone https://github.com/waveshare/e-Paper.git
+   cd e-Paper/RaspberryPi_JetsonNano/python/
+   sudo python3 setup.py install
+   ```
+
+4. **Run SPROUT**:
+   ```bash
+   python3 src/main.py
+   ```
+
+## Development / Mock Mode
+If running on a desktop, SPROUT will generate a `sprout_display_preview.png` file instead of trying to talk to an e-paper display.
+
+## Prototype Structure
+- `src/pet_logic.py`: Core state machine for Sprout.
+- `src/renderer.py`: Drawing logic using Pillow.
+- `src/main.py`: Main entry point and user interaction.
