@@ -5,22 +5,75 @@ import time
 # Try to import e-paper library if available
 EPD_AVAILABLE = False
 try:
-    from waveshare_epd import epd2in13_V2 as epd_driver
+    from waveshare_epd import epd2in13_V4 as epd_driver
     EPD_AVAILABLE = True
-    print("Detected Waveshare 2.13inch V2 display.")
+    EPD_VERSION = "2.13inch V4"
+    print(f"Detected Waveshare {EPD_VERSION} display.")
 except ImportError:
     try:
-        from waveshare_epd import epd2in13 as epd_driver
+        from waveshare_epd import epd2in13_V3 as epd_driver
         EPD_AVAILABLE = True
-        print("Detected Waveshare 2.13inch (Legacy) display.")
-    except ImportError as e:
-        print(f"Waveshare library not found or wrong driver: {e}")
-        print("Running in mock mode.")
+        EPD_VERSION = "2.13inch V3"
+        print(f"Detected Waveshare {EPD_VERSION} display.")
+    except ImportError:
+        try:
+            from waveshare_epd import epd2in13_V2 as epd_driver
+            EPD_AVAILABLE = True
+            EPD_VERSION = "2.13inch V2"
+            print(f"Detected Waveshare {EPD_VERSION} display.")
+        except ImportError:
+            try:
+                from waveshare_epd import epd2in13 as epd_driver
+                EPD_AVAILABLE = True
+                EPD_VERSION = "2.13inch (Legacy)"
+                print(f"Detected Waveshare {EPD_VERSION} display.")
+            except ImportError:
+                try:
+                    from waveshare_epd import epd2in13bc as epd_driver
+                    EPD_AVAILABLE = True
+                    EPD_VERSION = "2.13inch (B/C)"
+                    print(f"Detected Waveshare {EPD_VERSION} display.")
+                except ImportError:
+                    try:
+                        from waveshare_epd import epd2in13d as epd_driver
+                        EPD_AVAILABLE = True
+                        EPD_VERSION = "2.13inch (D)"
+                        print(f"Detected Waveshare {EPD_VERSION} display.")
+                    except ImportError as e:
+                        print(f"Waveshare library not found or no compatible 2.13inch driver found: {e}")
+                        print("Running in mock mode.")
 
 from pet_logic import SproutPet
 from renderer import Renderer
 
+def check_hardware():
+    """Diagnostic check for hardware interfaces."""
+    print("--- Hardware Diagnostic ---")
+    spi_enabled = os.path.exists("/dev/spidev0.0")
+    print(f"SPI Interface (/dev/spidev0.0): {'ENABLED' if spi_enabled else 'DISABLED'}")
+    
+    if not spi_enabled:
+        print("WARNING: SPI is not enabled. Waveshare display will NOT work.")
+        print("Please run 'sudo raspi-config', go to 'Interfacing Options', and enable SPI.")
+    
+    try:
+        import RPi.GPIO as GPIO
+        print(f"RPi.GPIO library: INSTALLED (Version {GPIO.VERSION})")
+    except ImportError:
+        print("RPi.GPIO library: NOT FOUND")
+        
+    try:
+        from PIL import Image
+        print("Pillow library: INSTALLED")
+    except ImportError:
+        print("Pillow library: NOT FOUND")
+    print("---------------------------\n")
+    return spi_enabled
+
 def main():
+    # Diagnostic check
+    check_hardware()
+    
     # Loop mode if specified via arguments
     loop_mode = "--loop" in sys.argv
     

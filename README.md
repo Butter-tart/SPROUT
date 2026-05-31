@@ -41,12 +41,27 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
 
 ## Troubleshooting Display Issues
 If the e-ink screen is not updating:
-1. **Verify SPI is enabled**: Run `ls /dev/spi*`. You should see `/dev/spidev0.0`.
-2. **Check Library Installation**: Ensure `waveshare-epd` is correctly installed. You can test this by running `python3 -c "import waveshare_epd; print('Success')"`.
-3. **Hardware Model**: SPROUT is currently configured for the 2.13inch V2 display. If you have a different model, `src/main.py` may need to be updated to import the correct driver from `waveshare_epd`.
-4. **Permissions**: If running as a service, ensure the user (e.g., `pi`) has access to the `spi` and `gpio` groups:
+1. **Run the Diagnostic Tool**:
    ```bash
-   sudo usermod -a -G spi,gpio,i2c pi
+   sudo python3 test_display.py
+   ```
+   This script will attempt to communicate with the display using several different 2.13-inch drivers. If one works, it will tell you which one.
+
+2. **Check Hardware Diagnostic in SPROUT**:
+   Run `python3 src/main.py`. It now performs a hardware check on startup and will warn you if SPI is disabled or libraries are missing.
+
+3. **Verify SPI is enabled**: Run `ls /dev/spi*`. You should see `/dev/spidev0.0`. If not, run `sudo raspi-config` > Interfacing Options > SPI > Yes.
+
+4. **Permissions**: Ensure your user has access to hardware:
+   ```bash
+   sudo usermod -a -G spi,gpio,i2c $USER
+   ```
+   (You must log out and back in for this to take effect).
+
+5. **Reinstall Dependencies**: Sometimes system libraries are missing for image processing:
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5
    ```
 
 ## Autoboot Setup

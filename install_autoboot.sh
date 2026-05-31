@@ -15,7 +15,19 @@ fi
 
 echo "Installing SPROUT autoboot service..."
 
-# 1. Update WorkingDirectory and User in the service file if necessary
+# 0. Install system dependencies
+echo "Installing system dependencies..."
+apt-get update
+apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5 spi-tools
+
+# 1. Ensure SPI is enabled (non-interactive)
+if ! grep -q "dtparam=spi=on" /boot/config.txt; then
+  echo "Enabling SPI in /boot/config.txt..."
+  echo "dtparam=spi=on" >> /boot/config.txt
+  echo "SPI enabled. A reboot might be required if it wasn't already on."
+fi
+
+# 2. Update WorkingDirectory and User in the service file if necessary
 # We assume the user might have named their user differently or put it in a different spot, 
 # but for RPi zero the default is usually /home/pi/SPROUT.
 # We'll stick to the provided sprout.service template but make sure paths exist.
