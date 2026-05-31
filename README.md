@@ -10,6 +10,8 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
 - **Growth Stages**: Level up by checking in, going for walks, and getting sunshine.
 - **Animated Loading**: A hopping seedling greets you during startup using e-ink partial refreshes.
 - **8BitDo Zero 2 Support**: Use your controller to navigate menus and control functions.
+- **Settings Menu**: Customize your experience with different themes (Default, Dark, High Contrast).
+- **System Controls**: Shutdown or Restart your Raspberry Pi directly from the SPROUT menu.
 - **Walk Timer**: Start and stop a walk timer to track your outdoor activity and boost Sprout's health.
 - **E-Ink Optimized**: Low power consumption and easy on the eyes.
 
@@ -70,6 +72,10 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
    - **START**: Open/Close Menu.
    - **A**: Select (in menu) or Shortcut to Start/Stop Walk.
    - **DPAD / Buttons**: Navigate menu.
+   - **Menu Options**:
+     - **Walk Timer**: Start/Stop tracking your walk.
+     - **Settings**: Change the display theme (Dark mode, etc).
+     - **Restart/Shutdown**: Safely power off or reboot your device.
 
 ## Troubleshooting Display Issues
 If the e-ink screen is not updating:

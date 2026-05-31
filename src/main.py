@@ -159,36 +159,67 @@ def main():
     
     # Menu State
     menu_active = False
+    menu_level = "Main" # Main, Settings
     menu_selection = 0
-    menu_options = ["Walk Timer", "Check-in", "Cancel"]
+    menu_options_main = ["Walk Timer", "Settings", "Restart", "Shutdown", "Cancel"]
+    menu_options_settings = ["Theme: Default", "Theme: Dark", "Theme: High Contrast", "Back"]
     
     def input_callback(event_type, value):
-        nonlocal menu_active, menu_selection, pet
+        nonlocal menu_active, menu_level, menu_selection, pet
         
+        # Helper to get current options
+        def get_options():
+            if menu_level == "Settings":
+                return menu_options_settings
+            return menu_options_main
+
         if event_type == 'KEY_DOWN':
             print(f"Input: {value}")
             if value == 'START':
                 menu_active = not menu_active
+                menu_level = "Main"
+                menu_selection = 0
             
             elif menu_active:
-                if value == 'DPAD_Y' or value == 'BTN_1': # BTN_1 might be Up on some modes
-                    menu_selection = (menu_selection - 1) % len(menu_options)
+                options = get_options()
+                if value == 'DPAD_Y' or value == 'BTN_1': # Up
+                    menu_selection = (menu_selection - 1) % len(options)
                 elif value == 'BTN_2': # Down
-                    menu_selection = (menu_selection + 1) % len(menu_options)
+                    menu_selection = (menu_selection + 1) % len(options)
                 elif value == 'A':
-                    # Select option
-                    selection = menu_options[menu_selection]
-                    if selection == "Walk Timer":
-                        if pet.is_walking:
-                            pet.stop_walk()
-                            print("Walking stopped.")
-                        else:
-                            pet.start_walk()
-                            print("Walking started!")
-                    elif selection == "Check-in":
-                        print("Check-in selected (Interactive only for now)")
+                    selection = options[menu_selection]
                     
-                    menu_active = False
+                    if menu_level == "Main":
+                        if selection == "Walk Timer":
+                            if pet.is_walking:
+                                pet.stop_walk()
+                                print("Walking stopped.")
+                            else:
+                                pet.start_walk()
+                                print("Walking started!")
+                            menu_active = False
+                        elif selection == "Settings":
+                            menu_level = "Settings"
+                            menu_selection = 0
+                        elif selection == "Restart":
+                            print("Restarting system...")
+                            os.system("sudo reboot")
+                        elif selection == "Shutdown":
+                            print("Shutting down system...")
+                            os.system("sudo poweroff")
+                        elif selection == "Cancel":
+                            menu_active = False
+                    
+                    elif menu_level == "Settings":
+                        if "Theme:" in selection:
+                            new_theme = selection.split(": ")[1]
+                            pet.theme = new_theme
+                            print(f"Theme changed to {new_theme}")
+                            # Keep menu open to show change, or close? Let's stay in settings
+                        elif selection == "Back":
+                            menu_level = "Main"
+                            menu_selection = 1 # Back to Settings option
+                    
                     pet.save()
             
             elif value == 'A' and not menu_active:
@@ -202,11 +233,12 @@ def main():
         elif event_type == 'ABS':
             axis, axis_val = value
             if menu_active:
+                options = get_options()
                 if axis == 'DPAD_Y':
                     if axis_val == -1: # Up
-                        menu_selection = (menu_selection - 1) % len(menu_options)
+                        menu_selection = (menu_selection - 1) % len(options)
                     elif axis_val == 1: # Down
-                        menu_selection = (menu_selection + 1) % len(menu_options)
+                        menu_selection = (menu_selection + 1) % len(options)
 
     # Start input handler
     if INPUT_AVAILABLE:
@@ -242,12 +274,13 @@ def main():
             pet.save()
             
             # Render the screen
-            renderer = Renderer()
+            renderer = Renderer(theme=pet.theme)
             renderer.draw_pet(pet.to_dict())
             renderer.draw_stats(pet.to_dict())
             
             if menu_active:
-                renderer.draw_menu(menu_options, menu_selection)
+                options = menu_options_settings if menu_level == "Settings" else menu_options_main
+                renderer.draw_menu(options, menu_selection, title=menu_level.upper())
             
             if EPD_AVAILABLE:
                 try:

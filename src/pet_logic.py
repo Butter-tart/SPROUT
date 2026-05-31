@@ -9,6 +9,7 @@ class SproutPet:
         self.energy = 50     # 0-100
         self.stress = 20     # 0-100
         self.sunshine = 50   # 0-100 (New sunshine/outdoor metric)
+        self.theme = "Default" # Default, Dark, High Contrast
         self.experience = 0   # Total XP
         self.level = 1       # 1-4 Growth stages
         self.walk_time_today = 0  # Total walk minutes today
@@ -112,6 +113,7 @@ class SproutPet:
             "energy": round(self.energy, 1),
             "stress": round(self.stress, 1),
             "sunshine": round(self.sunshine, 1),
+            "theme": self.theme,
             "experience": round(self.experience, 1),
             "level": self.level,
             "walk_time_today": round(self.walk_time_today, 1),
@@ -133,6 +135,7 @@ class SproutPet:
             pet.energy = data['energy']
             pet.stress = data['stress']
             pet.sunshine = data.get('sunshine', 50)
+            pet.theme = data.get('theme', "Default")
             pet.experience = data.get('experience', 0)
             pet.level = data.get('level', 1)
             pet.walk_time_today = data.get('walk_time_today', 0)
