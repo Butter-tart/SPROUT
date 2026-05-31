@@ -29,9 +29,24 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
    sudo python3 setup.py install
    ```
 
-4. **Run SPROUT**:
+4. **Install Required Fonts (Optional but recommended)**:
+   ```bash
+   sudo apt-get install fonts-liberation
+   ```
+
+5. **Run SPROUT**:
    ```bash
    python3 src/main.py
+   ```
+
+## Troubleshooting Display Issues
+If the e-ink screen is not updating:
+1. **Verify SPI is enabled**: Run `ls /dev/spi*`. You should see `/dev/spidev0.0`.
+2. **Check Library Installation**: Ensure `waveshare-epd` is correctly installed. You can test this by running `python3 -c "import waveshare_epd; print('Success')"`.
+3. **Hardware Model**: SPROUT is currently configured for the 2.13inch V2 display. If you have a different model, `src/main.py` may need to be updated to import the correct driver from `waveshare_epd`.
+4. **Permissions**: If running as a service, ensure the user (e.g., `pi`) has access to the `spi` and `gpio` groups:
+   ```bash
+   sudo usermod -a -G spi,gpio,i2c pi
    ```
 
 ## Autoboot Setup

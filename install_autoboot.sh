@@ -29,9 +29,13 @@ systemctl daemon-reload
 # 4. Enable the service to start on boot
 systemctl enable $SERVICE_NAME
 
-# 5. Inform the user
+# 5. Ensure the user is in the correct groups for hardware access
+usermod -a -G spi,gpio,i2c $USER_NAME
+
+# 6. Inform the user
 echo "-------------------------------------------------------"
 echo "SPROUT autoboot service installed and enabled!"
+echo "User $USER_NAME added to spi, gpio, and i2c groups."
 echo "It will start automatically on the next boot."
 echo "To start it now, run: sudo systemctl start $SERVICE_NAME"
 echo "To check status, run: sudo systemctl status $SERVICE_NAME"
