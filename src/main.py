@@ -2,6 +2,8 @@ import sys
 import os
 import time
 
+import signal
+
 # Try to import e-paper library if available
 EPD_AVAILABLE = False
 try:
@@ -70,6 +72,20 @@ def check_hardware():
     print("---------------------------\n")
     return spi_enabled
 
+def graceful_shutdown(epd):
+    """Clear screen and put to sleep before exiting."""
+    if epd:
+        try:
+            print("\nShutting down: Clearing display...")
+            epd.init()
+            epd.Clear(0xFF)
+            print("Putting display to sleep...")
+            epd.sleep()
+            # On some drivers, we might need to module-level reset or close SPI
+            # but usually epd.sleep() is enough for Waveshare
+        except Exception as e:
+            print(f"Error during shutdown: {e}")
+
 def main():
     # Diagnostic check
     check_hardware()
@@ -77,77 +93,100 @@ def main():
     # Loop mode if specified via arguments
     loop_mode = "--loop" in sys.argv
     
-    while True:
-        pet = SproutPet.load()
-        pet.update()
-        
-        # Check if we are running in interactive mode or as a service
-        is_interactive = os.isatty(sys.stdin.fileno()) and not loop_mode
-        
-        if is_interactive:
-            print(f"Welcome back to {pet.name}'s mental health check-in!")
-            print(f"Current Status: {pet.status}")
-            print(f"Happiness: {pet.happiness}% | Energy: {pet.energy}% | Stress: {pet.stress}%")
-            print("\nHow are you feeling today? (1-5)")
-            print("1: Not great")
-            print("2: A bit down")
-            print("3: Okay")
-            print("4: Good")
-            print("5: Fantastic!")
+    epd = None
+    
+    def signal_handler(sig, frame):
+        print(f"\nReceived signal {sig}. Graceful shutdown...")
+        if EPD_AVAILABLE and epd:
+            graceful_shutdown(epd)
+        sys.exit(0)
+
+    # Register signals for graceful shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    try:
+        while True:
+            pet = SproutPet.load()
+            pet.update()
             
-            try:
-                score = int(input(">> "))
-                if 1 <= score <= 5:
-                    pet.check_in(score)
-                    print(f"Thanks for sharing! {pet.name} feels better now too.")
-                else:
-                    print("Invalid input, no check-in recorded.")
-            except ValueError:
-                print("Invalid input, no check-in recorded.")
-            except EOFError:
-                # Handle case where input is closed
-                pass
-        else:
-            if not loop_mode:
-                print("\nNon-interactive mode: Skipping mood check-in.")
-
-        pet.save()
-        
-        # Render the screen
-        renderer = Renderer()
-        renderer.draw_pet(pet.status)
-        renderer.draw_stats(pet.to_dict())
-        
-        if EPD_AVAILABLE:
-            try:
-                print("Initializing display...")
-                epd = epd_driver.EPD()
-                # Some versions use epd.init(), some use epd.init(epd.FULL_UPDATE)
+            # Check if we are running in interactive mode or as a service
+            is_interactive = os.isatty(sys.stdin.fileno()) and not loop_mode
+            
+            if is_interactive:
+                print(f"Welcome back to {pet.name}'s mental health check-in!")
+                print(f"Current Status: {pet.status}")
+                print(f"Happiness: {pet.happiness}% | Energy: {pet.energy}% | Stress: {pet.stress}%")
+                print("\nHow are you feeling today? (1-5)")
+                print("1: Not great")
+                print("2: A bit down")
+                print("3: Okay")
+                print("4: Good")
+                print("5: Fantastic!")
+                
                 try:
-                    epd.init(epd.FULL_UPDATE)
-                except TypeError:
-                    epd.init()
-                
-                print("Updating display content...")
-                epd.display(epd.getbuffer(renderer.get_image()))
-                
-                print("Putting display to sleep...")
-                epd.sleep()
-                print("Display updated successfully.")
-            except Exception as e:
-                print(f"Error updating display: {e}")
-                import traceback
-                traceback.print_exc()
-        else:
-            renderer.save_preview("sprout_display_preview.png")
-            print("Preview saved to sprout_display_preview.png")
+                    score = int(input(">> "))
+                    if 1 <= score <= 5:
+                        pet.check_in(score)
+                        print(f"Thanks for sharing! {pet.name} feels better now too.")
+                    else:
+                        print("Invalid input, no check-in recorded.")
+                except ValueError:
+                    print("Invalid input, no check-in recorded.")
+                except EOFError:
+                    # Handle case where input is closed
+                    break
+            else:
+                if not loop_mode:
+                    print("\nNon-interactive mode: Skipping mood check-in.")
 
-        if not loop_mode:
-            break
-        
-        # In loop mode, wait before next update (e.g., 5 minutes)
-        print("Loop mode active. Waiting 5 minutes for next update...")
-        time.sleep(300)
+            pet.save()
+            
+            # Render the screen
+            renderer = Renderer()
+            renderer.draw_pet(pet.status)
+            renderer.draw_stats(pet.to_dict())
+            
+            if EPD_AVAILABLE:
+                try:
+                    if epd is None:
+                        print("Initializing display...")
+                        epd = epd_driver.EPD()
+                    
+                    # Some versions use epd.init(), some use epd.init(epd.FULL_UPDATE)
+                    print(f"Driver {EPD_VERSION} init...")
+                    try:
+                        epd.init(epd.FULL_UPDATE)
+                    except (TypeError, AttributeError):
+                        try:
+                            epd.init()
+                        except Exception as e:
+                            print(f"Init failed: {e}. Trying alternative init...")
+                            # Some older drivers might need different approach
+                    
+                    print("Updating display content...")
+                    epd.display(epd.getbuffer(renderer.get_image()))
+                    
+                    print("Putting display to sleep...")
+                    epd.sleep()
+                    print("Display updated successfully.")
+                except Exception as e:
+                    print(f"Error updating display: {e}")
+                    import traceback
+                    traceback.print_exc()
+            else:
+                renderer.save_preview("sprout_display_preview.png")
+                print("Preview saved to sprout_display_preview.png")
+
+            if not loop_mode:
+                break
+            
+            # In loop mode, wait before next update (e.g., 5 minutes)
+            print("Loop mode active. Waiting 5 minutes for next update...")
+            time.sleep(300)
+    finally:
+        if EPD_AVAILABLE and epd:
+            graceful_shutdown(epd)
 
 if __name__ == "__main__":
     main()

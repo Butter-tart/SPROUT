@@ -44,6 +44,10 @@ def test_driver(module_name, name):
         print("Updating display...")
         epd.display(epd.getbuffer(image))
         
+        time.sleep(2)
+        print("Clearing display...")
+        epd.Clear(0xFF)
+        
         print("Going to sleep...")
         epd.sleep()
         print(f"SUCCESS with {name}!")
