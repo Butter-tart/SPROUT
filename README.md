@@ -4,7 +4,10 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
 
 ## Features
 - **Mood Check-ins**: Log your daily mental health state to help your Sprout grow.
-- **Dynamic Character**: Sprout's appearance changes based on your check-ins and time.
+- **Sunshine Tracker**: SPROUT encourages you to go outside! Getting sunshine boosts both your and Sprout's happiness.
+- **Supportive Companion**: Updated messaging to be more compassionate on tough mental health days.
+- **Dynamic Character**: Sprout's appearance changes based on your check-ins, sunshine, and time.
+- **Animated Loading**: A hopping character greets you during startup using e-ink partial refreshes.
 - **E-Ink Optimized**: Low power consumption and easy on the eyes.
 
 ## Installation on Raspberry Pi

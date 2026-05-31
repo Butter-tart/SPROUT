@@ -86,6 +86,61 @@ def graceful_shutdown(epd):
         except Exception as e:
             print(f"Error during shutdown: {e}")
 
+def show_loading_animation(epd):
+    """Shows a hopping character animation on the e-ink display."""
+    print("Showing loading animation...")
+    renderer = Renderer()
+    steps = 10
+    
+    # Pre-init display for partial updates if possible
+    if EPD_AVAILABLE and epd:
+        try:
+            # Full update for the first frame to clear everything
+            epd.init()
+            renderer.draw_loading_frame(0)
+            epd.display(epd.getbuffer(renderer.get_image()))
+            
+            # Some drivers need to be initialized for partial update
+            if hasattr(epd, 'init'):
+                try:
+                    # Some drivers use epd.init(epd.PART_UPDATE)
+                    if hasattr(epd, 'PART_UPDATE'):
+                        epd.init(epd.PART_UPDATE)
+                    else:
+                        epd.init()
+                except:
+                    epd.init()
+
+            # Switch to partial update mode if supported
+            # Note: partial update is very driver-dependent
+            for i in range(1, steps + 1):
+                progress = i / steps
+                renderer.draw_loading_frame(progress)
+                
+                # Check for display_Partial or similar
+                if hasattr(epd, 'display_Partial'):
+                    epd.display_Partial(epd.getbuffer(renderer.get_image()))
+                elif hasattr(epd, 'display_partial'):
+                    epd.display_partial(epd.getbuffer(renderer.get_image()))
+                else:
+                    # Fallback to full update but it will flicker
+                    epd.display(epd.getbuffer(renderer.get_image()))
+                
+            # Put display back to sleep after animation
+            if hasattr(epd, 'sleep'):
+                epd.sleep()
+                time.sleep(0.5) # Wait for sleep
+        except Exception as e:
+            print(f"Loading animation failed: {e}")
+    else:
+        # Mock mode loading animation
+        for i in range(steps + 1):
+            progress = i / steps
+            renderer.draw_loading_frame(progress)
+            renderer.save_preview(f"loading_frame_{i}.png")
+            print(f"Loading... {int(progress*100)}%")
+            time.sleep(0.1)
+
 def main():
     # Diagnostic check
     check_hardware()
@@ -94,6 +149,16 @@ def main():
     loop_mode = "--loop" in sys.argv
     
     epd = None
+    
+    if EPD_AVAILABLE:
+        try:
+            print("Initializing display for loading screen...")
+            epd = epd_driver.EPD()
+            show_loading_animation(epd)
+        except Exception as e:
+            print(f"Could not show loading animation: {e}")
+    else:
+        show_loading_animation(None)
     
     def signal_handler(sig, frame):
         print(f"\nReceived signal {sig}. Graceful shutdown...")
@@ -115,20 +180,42 @@ def main():
             
             if is_interactive:
                 print(f"Welcome back to {pet.name}'s mental health check-in!")
+                if pet.status == "Needs Sun":
+                    print(f"🌞 {pet.name} looks a bit pale. Maybe some sunshine would help?")
+                elif pet.status == "Stressed":
+                    print(f"🫂 It's been a tough day, hasn't it? {pet.name} is here for you.")
+                elif pet.status == "Sad":
+                    print(f"☁️ Sending you a big hug. You're doing your best.")
+                else:
+                    print(f"✨ {pet.name} is happy to see you!")
+
                 print(f"Current Status: {pet.status}")
-                print(f"Happiness: {pet.happiness}% | Energy: {pet.energy}% | Stress: {pet.stress}%")
+                print(f"Hap: {pet.happiness}% | Enr: {pet.energy}% | Str: {pet.stress}% | Sun: {pet.sunshine}%")
+            
                 print("\nHow are you feeling today? (1-5)")
-                print("1: Not great")
-                print("2: A bit down")
-                print("3: Okay")
+                print("1: Really tough")
+                print("2: Not so good")
+                print("3: Hanging in there")
                 print("4: Good")
-                print("5: Fantastic!")
-                
+                print("5: Radiant!")
+            
                 try:
-                    score = int(input(">> "))
+                    score_str = input(">> ")
+                    if not score_str:
+                        score = 3
+                    else:
+                        score = int(score_str)
+                
+                    print("\nDid you manage to get some sunshine or step outside today? (y/n)")
+                    sun_input = input(">> ").lower()
+                    got_sun = sun_input == 'y'
+                
                     if 1 <= score <= 5:
-                        pet.check_in(score)
-                        print(f"Thanks for sharing! {pet.name} feels better now too.")
+                        pet.check_in(score, got_sun)
+                        if got_sun:
+                            print(f"Wonderful! That sunshine will do both you and {pet.name} a world of good.")
+                        else:
+                            print(f"That's okay. {pet.name} is proud of you for checking in anyway.")
                     else:
                         print("Invalid input, no check-in recorded.")
                 except ValueError:

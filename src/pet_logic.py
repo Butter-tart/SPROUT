@@ -8,6 +8,7 @@ class SproutPet:
         self.happiness = 50  # 0-100
         self.energy = 50     # 0-100
         self.stress = 20     # 0-100
+        self.sunshine = 50   # 0-100 (New sunshine/outdoor metric)
         self.last_update = time.time()
         self.status = "Healthy"
         
@@ -18,13 +19,16 @@ class SproutPet:
         # Decay rates (per hour)
         self.happiness = max(0, self.happiness - (elapsed / 3600) * 5)
         self.energy = max(0, self.energy - (elapsed / 3600) * 10)
+        self.sunshine = max(0, self.sunshine - (elapsed / 3600) * 8)
         self.stress = min(100, self.stress + (elapsed / 3600) * 2)
         
         self.last_update = now
         self._update_status()
 
     def _update_status(self):
-        if self.stress > 70:
+        if self.sunshine < 20:
+            self.status = "Needs Sun"
+        elif self.stress > 70:
             self.status = "Stressed"
         elif self.energy < 20:
             self.status = "Tired"
@@ -33,15 +37,21 @@ class SproutPet:
         else:
             self.status = "Healthy"
 
-    def check_in(self, mood_score):
+    def check_in(self, mood_score, got_sunshine=False):
         """
-        User logs their mood. 
+        User logs their mood and whether they went outside. 
         mood_score: 1 (Bad) to 5 (Great)
+        got_sunshine: Boolean
         """
         # Helping the user helps Sprout!
         self.happiness = min(100, self.happiness + mood_score * 10)
         self.stress = max(0, self.stress - mood_score * 5)
         self.energy = min(100, self.energy + 5)
+        
+        if got_sunshine:
+            self.sunshine = min(100, self.sunshine + 40)
+            self.happiness = min(100, self.happiness + 10)
+            
         self.update()
 
     def to_dict(self):
@@ -50,6 +60,7 @@ class SproutPet:
             "happiness": round(self.happiness, 1),
             "energy": round(self.energy, 1),
             "stress": round(self.stress, 1),
+            "sunshine": round(self.sunshine, 1),
             "status": self.status,
             "last_update": self.last_update
         }
@@ -67,6 +78,7 @@ class SproutPet:
             pet.happiness = data['happiness']
             pet.energy = data['energy']
             pet.stress = data['stress']
+            pet.sunshine = data.get('sunshine', 50)
             pet.status = data['status']
             pet.last_update = data['last_update']
             return pet
