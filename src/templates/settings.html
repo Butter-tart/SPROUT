@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Customize Sprout</title>
+    <title>SPROUT Settings</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -52,17 +52,41 @@
             display: inline-block;
             width: 100%;
             margin-top: 10px;
+            box-sizing: border-box;
         }
         .btn-save { background-color: #27ae60; }
         .btn-save:hover { background-color: #219150; }
+        .btn-update { background-color: #3498db; }
+        .btn-update:hover { background-color: #2980b9; }
         .btn-back { background-color: #7f8c8d; }
         .btn-back:hover { background-color: #6c7a7d; }
+        .flash {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .settings-section {
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Customize Your SPROUT</h1>
-        <form action="{{ url_for('customize') }}" method="POST">
+        <h1>SPROUT Settings</h1>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <form action="{{ url_for('settings') }}" method="POST">
             <div class="form-group">
                 <label for="name">Pet Name:</label>
                 <input type="text" id="name" name="name" value="{{ pet.name }}" required>
@@ -75,9 +99,18 @@
                     <option value="High Contrast" {% if pet.theme == 'High Contrast' %}selected{% endif %}>High Contrast</option>
                 </select>
             </div>
-            <button type="submit" class="btn btn-save">Save Changes</button>
-            <a href="{{ url_for('index') }}" class="btn btn-back">Back to Home</a>
+            <button type="submit" class="btn btn-save">Save Pet Settings</button>
         </form>
+
+        <div class="settings-section">
+            <h3>Device Management</h3>
+            <p>Check for and install the latest firmware for your SPROUT device.</p>
+            <a href="{{ url_for('update_device') }}" class="btn btn-update">Update SPROUT Device</a>
+        </div>
+
+        <div class="settings-section">
+            <a href="{{ url_for('index') }}" class="btn btn-back">Back to Home</a>
+        </div>
     </div>
 </body>
 </html>

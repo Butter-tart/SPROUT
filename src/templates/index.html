@@ -13,6 +13,19 @@
             flex-direction: column;
             align-items: center;
             padding: 20px;
+            position: relative;
+        }
+        .settings-gear {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            text-decoration: none;
+            color: #7f8c8d;
+            transition: color 0.3s;
+        }
+        .settings-gear:hover {
+            color: #2c3e50;
         }
         .container {
             background: white;
@@ -84,6 +97,7 @@
     </style>
 </head>
 <body>
+    <a href="{{ url_for('settings') }}" class="settings-gear" title="Settings">⚙️</a>
     <div class="container">
         <h1>🌱 Sprout: {{ pet.name }}</h1>
         
@@ -140,7 +154,6 @@
             <a href="{{ url_for('action', name='pet') }}" class="btn btn-pet">Pet</a>
             <a href="{{ url_for('action', name='socialize') }}" class="btn btn-social">Socialize</a>
             <a href="{{ url_for('action', name='gratitude') }}" class="btn btn-gratitude">Gratitude</a>
-            <a href="{{ url_for('customize') }}" class="btn btn-social" style="background-color: #2ecc71; color: white;">Customize</a>
             <a href="{{ url_for('action', name='sleep') }}" class="btn btn-sleep">
                 {% if pet.is_sleeping %}Wake Up{% else %}Go to Sleep{% endif %}
             </a>

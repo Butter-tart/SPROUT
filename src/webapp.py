@@ -43,17 +43,26 @@ def action(name):
     pet.save(SAVE_FILE)
     return redirect(url_for('index'))
 
-@app.route('/customize', methods=['GET', 'POST'])
-def customize():
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
     pet = SproutPet.load(SAVE_FILE)
     if request.method == 'POST':
         pet.name = request.form.get('name', pet.name)
         pet.theme = request.form.get('theme', pet.theme)
         pet.save(SAVE_FILE)
-        flash(f"Character updated! Meet the new {pet.name}! ✨")
-        return redirect(url_for('index'))
+        flash("Settings updated! ✨")
+        return redirect(url_for('settings'))
     
-    return render_template('customize.html', pet=pet.to_dict())
+    return render_template('settings.html', pet=pet.to_dict())
+
+@app.route('/update-device')
+def update_device():
+    # Simulate a device update process
+    # In a real scenario, this might trigger a git pull or download a firmware update
+    flash("Checking for updates... 📡")
+    # Simulate some logic
+    flash("SPROUT device is already up to date! (v1.0.2) ✅")
+    return redirect(url_for('settings'))
 
 if __name__ == '__main__':
     # Use host='0.0.0.0' to make it accessible on the local network
