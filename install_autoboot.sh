@@ -19,7 +19,13 @@ echo "Installing SPROUT autoboot service..."
 # 0. Install system dependencies
 echo "Installing system dependencies..."
 apt-get update
-apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5 spi-tools python3-evdev
+apt-get install -y python3-pip python3-pil python3-numpy libopenjp2-7 libtiff5 spi-tools python3-evdev python3-rpi.gpio
+
+# 0.1 Install Waveshare EPD library if not present
+if ! python3 -c "import waveshare_epd" 2>/dev/null; then
+    echo "Installing Waveshare EPD library..."
+    pip3 install waveshare-epd --break-system-packages || pip3 install waveshare-epd
+fi
 
 # 1. Ensure SPI is enabled (non-interactive)
 if ! grep -q "dtparam=spi=on" /boot/config.txt; then

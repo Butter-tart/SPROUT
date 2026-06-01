@@ -321,6 +321,7 @@ def main():
             pet.save(SAVE_FILE)
             
             # Render the screen
+            print(f"Update cycle started at {time.ctime()}...")
             weather = get_mock_weather()
             renderer = Renderer(theme=pet.theme)
             renderer.draw_pet(pet.to_dict())
@@ -345,13 +346,14 @@ def main():
                     # Some versions use epd.init(), some use epd.init(epd.FULL_UPDATE)
                     print(f"Driver {EPD_VERSION} init...")
                     try:
-                        epd.init(epd.FULL_UPDATE)
-                    except (TypeError, AttributeError):
-                        try:
+                        # For V4 and V3, FULL_UPDATE is often the default or required for clear image
+                        if hasattr(epd, 'FULL_UPDATE'):
+                            epd.init(epd.FULL_UPDATE)
+                        else:
                             epd.init()
-                        except Exception as e:
-                            print(f"Init failed: {e}. Trying alternative init...")
-                            # Some older drivers might need different approach
+                    except Exception as e:
+                        print(f"Init failed: {e}. Trying simple init...")
+                        epd.init()
                     
                     print("Updating display content...")
                     epd.display(epd.getbuffer(renderer.get_image()))
