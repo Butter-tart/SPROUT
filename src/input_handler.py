@@ -10,6 +10,7 @@ class InputHandler:
         self.running = False
         self.thread = None
         self.callback = None
+        self.reconnect_delay = 5 # seconds
         
         # 8BitDo Zero 2 Mapping (standard Gamepad mode)
         # Note: Codes can vary depending on mode (Start+B, Start+A, etc.)
@@ -39,27 +40,37 @@ class InputHandler:
         return None
 
     def start(self, callback):
-        """Starts a background thread to listen for input."""
-        if not self.device_path:
-            self.device_path = self.find_controller()
+        """Starts a background thread to listen for input and handle reconnection."""
+        self.callback = callback
+        self.running = True
+        self.thread = threading.Thread(target=self._run_monitor, daemon=True)
+        self.thread.start()
+        print("Input handler monitor started.")
+        return True
+
+    def _run_monitor(self):
+        """Monitor loop that handles connection and reconnection."""
+        while self.running:
+            if not self.device:
+                path = self.find_controller()
+                if path:
+                    self.device_path = path
+                    try:
+                        self.device = evdev.InputDevice(self.device_path)
+                        print(f"Connected to 8BitDo Zero 2 at {self.device_path}")
+                        self._process_events()
+                    except Exception as e:
+                        print(f"Failed to connect to device at {self.device_path}: {e}")
+                        self.device = None
+                else:
+                    # Optional: only print every few attempts to avoid log spam
+                    pass
             
-        if not self.device_path:
-            print("No 8BitDo Zero 2 controller found. Input handler disabled.")
-            return False
+            if self.running and not self.device:
+                time.sleep(self.reconnect_delay)
 
-        try:
-            self.device = evdev.InputDevice(self.device_path)
-            self.callback = callback
-            self.running = True
-            self.thread = threading.Thread(target=self._run, daemon=True)
-            self.thread.start()
-            print(f"Input handler started on {self.device_path} ({self.device.name})")
-            return True
-        except Exception as e:
-            print(f"Failed to start input handler: {e}")
-            return False
-
-    def _run(self):
+    def _process_events(self):
+        """Internal loop to process events from the current device."""
         try:
             for event in self.device.read_loop():
                 if not self.running:
@@ -78,9 +89,21 @@ class InputHandler:
                     if axis:
                         self.callback('ABS', (axis, event.value))
                         
+        except (OSError, EOFError) as e:
+            print(f"Controller disconnected: {e}")
         except Exception as e:
             print(f"Input handler error: {e}")
-            self.running = False
+        finally:
+            if self.device:
+                try:
+                    self.device.close()
+                except:
+                    pass
+                self.device = None
+
+    def _run(self):
+        # Kept for compatibility if anything calls it directly, but now using _run_monitor
+        self._run_monitor()
 
     def stop(self):
         self.running = False

@@ -289,6 +289,7 @@ def main():
     # Start input handler
     if INPUT_AVAILABLE:
         input_handler = InputHandler()
+        # Non-blocking start, will monitor for controller in background
         input_handler.start(input_callback)
     else:
         print("Input handler skipped (evdev missing).")

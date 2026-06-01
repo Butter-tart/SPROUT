@@ -57,4 +57,4 @@ def customize():
 
 if __name__ == '__main__':
     # Use host='0.0.0.0' to make it accessible on the local network
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
