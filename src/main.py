@@ -112,67 +112,34 @@ def graceful_shutdown(epd):
         except Exception as e:
             print(f"Error during shutdown: {e}")
 
-def show_loading_animation(epd):
-    """Shows a hopping character animation on the e-ink display."""
-    print("Showing loading animation...")
+def show_loading_screen(epd):
+    """Shows a static loading screen on the e-ink display."""
+    print("Showing loading screen...")
     renderer = Renderer()
-    steps = 10
+    renderer.draw_static_loading()
     
-    # Pre-init display for partial updates if possible
+    # Save the static loading image for easy editing
+    renderer.save_preview("loading.png")
+    
     if EPD_AVAILABLE and epd:
         try:
-            # Full update for the first frame to clear everything
             epd.init()
-            renderer.draw_loading_frame(0)
             epd.display(epd.getbuffer(renderer.get_image()))
-            
-            # Some drivers need to be initialized for partial update
-            if hasattr(epd, 'init'):
-                try:
-                    # Some drivers use epd.init(epd.PART_UPDATE)
-                    if hasattr(epd, 'PART_UPDATE'):
-                        epd.init(epd.PART_UPDATE)
-                    else:
-                        epd.init()
-                except:
-                    epd.init()
-
-            # Switch to partial update mode if supported
-            # Note: partial update is very driver-dependent
-            for i in range(1, steps + 1):
-                progress = i / steps
-                renderer.draw_loading_frame(progress)
-                
-                # Check for display_Partial or similar
-                if hasattr(epd, 'display_Partial'):
-                    epd.display_Partial(epd.getbuffer(renderer.get_image()))
-                elif hasattr(epd, 'display_partial'):
-                    epd.display_partial(epd.getbuffer(renderer.get_image()))
-                else:
-                    # Fallback to full update but it will flicker
-                    epd.display(epd.getbuffer(renderer.get_image()))
-                
-            # Put display back to sleep after animation
             if hasattr(epd, 'sleep'):
                 epd.sleep()
-                time.sleep(0.5) # Wait for sleep
+                time.sleep(0.5)
         except Exception as e:
-            print(f"Loading animation failed: {e}")
+            print(f"Displaying loading screen failed: {e}")
     else:
-        # Mock mode loading animation
-        for i in range(steps + 1):
-            progress = i / steps
-            renderer.draw_loading_frame(progress)
-            renderer.save_preview(f"loading_frame_{i}.png")
-            print(f"Loading... {int(progress*100)}%")
-            time.sleep(0.1)
+        print("Loading... (Image saved to loading.png)")
+        time.sleep(1.0)
 
 def main():
     # Diagnostic check
     check_hardware()
     
-    # Loop mode if specified via arguments
-    loop_mode = "--loop" in sys.argv
+    # Loop mode by default, can be disabled if needed (though usually we want it on)
+    loop_mode = "--no-loop" not in sys.argv
     
     pet = SproutPet.load()
     epd = None
@@ -181,8 +148,8 @@ def main():
     menu_active = False
     menu_level = "Main" # Main, Settings, Breathing
     menu_selection = 0
-    menu_options_main = ["Water", "Breathing", "Gratitude", "Social", "Walk Timer", "Sleep", "Settings", "Restart", "Shutdown", "Cancel"]
-    menu_options_settings = ["Theme: Default", "Theme: Dark", "Theme: High Contrast", "Back"]
+    menu_options_main = ["Water", "Breathing", "Gratitude", "Social", "Walk", "Sleep", "Settings", "Quit"]
+    menu_options_settings = ["Theme: Default", "Theme: Dark", "Theme: High Contrast", "Restart", "Shutdown", "Back"]
 
     def run_breathing_exercise():
         nonlocal epd, pet
@@ -265,7 +232,7 @@ def main():
                             trigger_haptic()
                             pet.socialize()
                             menu_active = False
-                        elif selection == "Walk Timer":
+                        elif selection == "Walk":
                             if pet.is_walking:
                                 pet.stop_walk()
                             else:
@@ -277,13 +244,7 @@ def main():
                         elif selection == "Settings":
                             menu_level = "Settings"
                             menu_selection = 0
-                        elif selection == "Restart":
-                            print("Restarting system...")
-                            os.system("sudo reboot")
-                        elif selection == "Shutdown":
-                            print("Shutting down system...")
-                            os.system("sudo poweroff")
-                        elif selection == "Cancel":
+                        elif selection == "Quit":
                             menu_active = False
                     
                     elif menu_level == "Settings":
@@ -291,6 +252,12 @@ def main():
                             new_theme = selection.split(": ")[1]
                             pet.theme = new_theme
                             print(f"Theme changed to {new_theme}")
+                        elif selection == "Restart":
+                            print("Restarting system...")
+                            os.system("sudo reboot")
+                        elif selection == "Shutdown":
+                            print("Shutting down system...")
+                            os.system("sudo poweroff")
                         elif selection == "Back":
                             menu_level = "Main"
                             menu_selection = 6 # Back to Settings option
@@ -326,11 +293,11 @@ def main():
         try:
             print("Initializing display for loading screen...")
             epd = epd_driver.EPD()
-            show_loading_animation(epd)
+            show_loading_screen(epd)
         except Exception as e:
-            print(f"Could not show loading animation: {e}")
+            print(f"Could not show loading screen: {e}")
     else:
-        show_loading_animation(None)
+        show_loading_screen(None)
     
     def signal_handler(sig, frame):
         print(f"\nReceived signal {sig}. Graceful shutdown...")
@@ -354,11 +321,11 @@ def main():
             renderer.draw_pet(pet.to_dict())
             renderer.draw_stats(pet.to_dict())
             
-            # Show weather info if relevant
+            # Show weather info if relevant - Improved positioning
             if weather == "Sunny" and pet.sunshine < 50:
-                renderer.draw.text((5, 35), "Go outside!", fill=renderer.fg_color)
+                renderer.draw.text((10, 30), "Go outside!", fill=renderer.fg_color)
             elif "Night" in weather and not pet.is_sleeping:
-                renderer.draw.text((5, 35), "Time for bed?", fill=renderer.fg_color)
+                renderer.draw.text((10, 30), "Time for bed?", fill=renderer.fg_color)
             
             if menu_active:
                 options = menu_options_settings if menu_level == "Settings" else menu_options_main

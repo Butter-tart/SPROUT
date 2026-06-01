@@ -1,6 +1,6 @@
 import os
 import sys
-from flask import Flask, render_template, redirect, url_for, flash
+from flask import Flask, render_template, redirect, url_for, flash, request
 
 # Add src to path so we can import pet_logic
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -42,6 +42,18 @@ def action(name):
     
     pet.save(SAVE_FILE)
     return redirect(url_for('index'))
+
+@app.route('/customize', methods=['GET', 'POST'])
+def customize():
+    pet = SproutPet.load(SAVE_FILE)
+    if request.method == 'POST':
+        pet.name = request.form.get('name', pet.name)
+        pet.theme = request.form.get('theme', pet.theme)
+        pet.save(SAVE_FILE)
+        flash(f"Character updated! Meet the new {pet.name}! ✨")
+        return redirect(url_for('index'))
+    
+    return render_template('customize.html', pet=pet.to_dict())
 
 if __name__ == '__main__':
     # Use host='0.0.0.0' to make it accessible on the local network
