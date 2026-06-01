@@ -18,6 +18,7 @@ class SproutPet:
         self.is_walking = False
         self.walk_start_timestamp = None
         self.last_update = time.time()
+        self.last_walk_timestamp = time.time()  # New: Track when the last walk ended
         self.status = "Healthy"
         self.is_sleeping = False # New
         self.streak = 0 # New
@@ -69,12 +70,25 @@ class SproutPet:
         
         # Decay rates (per hour)
         if not self.is_sleeping:
-            self.happiness = max(0, self.happiness - (elapsed / 3600) * 5)
+            # Normal decay
             self.energy = max(0, self.energy - (elapsed / 3600) * 10)
             self.sunshine = max(0, self.sunshine - (elapsed / 3600) * 8)
             self.hydration = max(0, self.hydration - (elapsed / 3600) * 10)
             self.social = max(0, self.social - (elapsed / 3600) * 4)
             self.stress = min(100, self.stress + (elapsed / 3600) * 2)
+            
+            # Happiness decay: faster if not walking
+            if not self.is_walking:
+                # Calculate how long since the last walk (in hours)
+                hours_since_walk = (now - self.last_walk_timestamp) / 3600
+                # Base decay is 5, increases by 2 for every hour since last walk, capped at 15
+                happiness_decay_rate = 5 + min(10, hours_since_walk * 2)
+                self.happiness = max(0, self.happiness - (elapsed / 3600) * happiness_decay_rate)
+            else:
+                # When walking, happiness is already increasing in the walk section above,
+                # but we can still have a small baseline decay if desired. 
+                # For now, let's keep it as is (no extra decay while walking).
+                pass
         else:
             # Energy recovers during sleep
             self.energy = min(100, self.energy + (elapsed / 3600) * 20)
@@ -115,6 +129,22 @@ class SproutPet:
         self.is_sleeping = not self.is_sleeping
         self.update()
 
+    def start_walk(self):
+        if not self.is_walking:
+            self.is_walking = True
+            self.walk_start_timestamp = time.time()
+            print("Walk started!")
+
+    def stop_walk(self):
+        if self.is_walking:
+            now = time.time()
+            walk_elapsed = now - self.walk_start_timestamp
+            self.walk_time_today += (walk_elapsed / 60)
+            self.is_walking = False
+            self.walk_start_timestamp = None
+            self.last_walk_timestamp = now  # Reset the last walk timer
+            print(f"Walk stopped. Duration: {walk_elapsed/60:.1f} minutes.")
+
     def _update_status(self):
         if self.is_sleeping:
             self.status = "Zzz..."
@@ -148,7 +178,8 @@ class SproutPet:
             "last_update": self.last_update,
             "is_sleeping": self.is_sleeping,
             "streak": self.streak,
-            "gratitude_count": self.gratitude_count
+            "gratitude_count": self.gratitude_count,
+            "last_walk_timestamp": self.last_walk_timestamp
         }
 
     def save(self, filename="sprout_save.json"):
@@ -177,6 +208,7 @@ class SproutPet:
                 pet.is_sleeping = data.get('is_sleeping', False)
                 pet.streak = data.get('streak', 0)
                 pet.gratitude_count = data.get('gratitude_count', 0)
+                pet.last_walk_timestamp = data.get('last_walk_timestamp', time.time())
                 return pet
             except Exception:
                 return cls()

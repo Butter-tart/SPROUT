@@ -71,9 +71,8 @@
                 <label for="theme">Theme:</label>
                 <select id="theme" name="theme">
                     <option value="Default" {% if pet.theme == 'Default' %}selected{% endif %}>Default</option>
-                    <option value="Forest" {% if pet.theme == 'Forest' %}selected{% endif %}>Forest</option>
-                    <option value="Ocean" {% if pet.theme == 'Ocean' %}selected{% endif %}>Ocean</option>
-                    <option value="Desert" {% if pet.theme == 'Desert' %}selected{% endif %}>Desert</option>
+                    <option value="Dark" {% if pet.theme == 'Dark' %}selected{% endif %}>Dark</option>
+                    <option value="High Contrast" {% if pet.theme == 'High Contrast' %}selected{% endif %}>High Contrast</option>
                 </select>
             </div>
             <button type="submit" class="btn btn-save">Save Changes</button>

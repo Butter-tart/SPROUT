@@ -4,6 +4,7 @@
 
 # Define variables
 SERVICE_NAME="sprout.service"
+WEBAPP_SERVICE_NAME="sprout-webapp.service"
 INSTALL_DIR="/home/pi/SPROUT"
 USER_NAME="pi"
 
@@ -32,23 +33,29 @@ fi
 # but for RPi zero the default is usually /home/pi/SPROUT.
 # We'll stick to the provided sprout.service template but make sure paths exist.
 
-# 2. Copy service file to systemd directory
-cp sprout.service /etc/systemd/system/$SERVICE_NAME
+# 2. Copy service files to systemd directory
+cp $SERVICE_NAME /etc/systemd/system/$SERVICE_NAME
+cp $WEBAPP_SERVICE_NAME /etc/systemd/system/$WEBAPP_SERVICE_NAME
 
-# 3. Reload systemd to recognize the new service
+# 3. Reload systemd to recognize the new services
 systemctl daemon-reload
 
-# 4. Enable the service to start on boot
+# 4. Enable the services to start on boot
 systemctl enable $SERVICE_NAME
+systemctl enable $WEBAPP_SERVICE_NAME
 
 # 5. Ensure the user is in the correct groups for hardware access
 usermod -a -G spi,gpio,i2c,input $USER_NAME
 
 # 6. Inform the user
 echo "-------------------------------------------------------"
-echo "SPROUT autoboot service installed and enabled!"
+echo "SPROUT autoboot services installed and enabled!"
 echo "User $USER_NAME added to spi, gpio, i2c, and input groups."
-echo "It will start automatically on the next boot."
-echo "To start it now, run: sudo systemctl start $SERVICE_NAME"
-echo "To check status, run: sudo systemctl status $SERVICE_NAME"
+echo "They will start automatically on the next boot."
+echo "To start them now, run:"
+echo "  sudo systemctl start $SERVICE_NAME"
+echo "  sudo systemctl start $WEBAPP_SERVICE_NAME"
+echo "To check status, run:"
+echo "  sudo systemctl status $SERVICE_NAME"
+echo "  sudo systemctl status $WEBAPP_SERVICE_NAME"
 echo "-------------------------------------------------------"

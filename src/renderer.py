@@ -166,10 +166,15 @@ class Renderer:
                 "Keep growing!",
                 "Take a deep breath.",
                 "You are enough.",
-                "Today is a new day."
+                "Today is a new day.",
+                "Be kind to yourself.",
+                "Small steps matter."
             ]
             import random
-            aff = affirmations[int(time.time() / 3600) % len(affirmations)]
+            # Use a seed based on day for a daily affirmation
+            current_day = int(time.time() / 86400)
+            random.seed(current_day)
+            aff = random.choice(affirmations)
             self.draw.text((10, self.height - 15), aff, fill=self.fg_color)
 
     def draw_rain(self, x, y):

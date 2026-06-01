@@ -47,6 +47,10 @@ except ImportError:
 
 from pet_logic import SproutPet
 from renderer import Renderer
+
+# Define save file path consistently
+SAVE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sprout_save.json")
+
 try:
     from input_handler import InputHandler
     INPUT_AVAILABLE = True
@@ -141,7 +145,7 @@ def main():
     # Loop mode by default, can be disabled if needed (though usually we want it on)
     loop_mode = "--no-loop" not in sys.argv
     
-    pet = SproutPet.load()
+    pet = SproutPet.load(SAVE_FILE)
     epd = None
     
     # Menu State
@@ -183,7 +187,7 @@ def main():
         set_led(0, 0, 0)
         pet.stress = max(0, pet.stress - 20)
         pet.experience += 20
-        pet.save()
+        pet.save(SAVE_FILE)
 
     def input_callback(event_type, value):
         nonlocal menu_active, menu_level, menu_selection, pet, epd
@@ -204,7 +208,7 @@ def main():
             elif value == 'SELECT': # Using SELECT as petting
                 trigger_haptic()
                 pet.pet()
-                pet.save()
+                pet.save(SAVE_FILE)
                 print("Sprout was petted!")
             
             elif menu_active:
@@ -262,7 +266,7 @@ def main():
                             menu_level = "Main"
                             menu_selection = 6 # Back to Settings option
                     
-                    pet.save()
+                    pet.save(SAVE_FILE)
             
             elif value == 'A' and not menu_active:
                 # Shortcut to start/stop walk
@@ -270,7 +274,7 @@ def main():
                     pet.stop_walk()
                 else:
                     pet.start_walk()
-                pet.save()
+                pet.save(SAVE_FILE)
 
         elif event_type == 'ABS':
             axis, axis_val = value
@@ -311,9 +315,9 @@ def main():
     
     try:
         while True:
-            pet = SproutPet.load()
+            pet = SproutPet.load(SAVE_FILE)
             pet.update()
-            pet.save()
+            pet.save(SAVE_FILE)
             
             # Render the screen
             weather = get_mock_weather()
