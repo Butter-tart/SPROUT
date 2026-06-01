@@ -99,6 +99,18 @@
                     <option value="High Contrast" {% if pet.theme == 'High Contrast' %}selected{% endif %}>High Contrast</option>
                 </select>
             </div>
+            <div class="form-group">
+                <label for="controller">Wireless Controller:</label>
+                <select id="controller" name="controller">
+                    <option value="" {% if not pet.selected_controller %}selected{% endif %}>-- Auto Detect --</option>
+                    {% for device in devices %}
+                    <option value="{{ device }}" {% if pet.selected_controller == device %}selected{% endif %}>{{ device }}</option>
+                    {% endfor %}
+                </select>
+                <small style="color: #666; display: block; margin-top: 5px;">
+                    Select your controller and click save. The SPROUT will then attempt to connect to it.
+                </small>
+            </div>
             <button type="submit" class="btn btn-save">Save Pet Settings</button>
         </form>
 

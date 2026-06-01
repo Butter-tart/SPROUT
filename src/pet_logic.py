@@ -24,6 +24,7 @@ class SproutPet:
         self.streak = 0 # New
         self.last_check_in_day = None # New
         self.gratitude_count = 0 # New
+        self.selected_controller = None # New: Stores the name of the selected controller
         
     def _check_level_up(self):
         """Growth stages: 1: Sprout, 2: Bud, 3: Bloom, 4: Big Flower"""
@@ -44,14 +45,18 @@ class SproutPet:
         current_day = time.strftime("%Y-%m-%d", time.localtime(now))
         if self.last_check_in_day and self.last_check_in_day != current_day:
             # Check if it was yesterday or further back
-            last_day_ts = time.mktime(time.strptime(self.last_check_in_day, "%Y-%m-%d"))
-            if now - last_day_ts < 172800: # Less than 48 hours
-                # If we have a check-in today, we increment streak. 
-                # For now, let's just say opening the app counts as a check-in for the day.
-                self.streak += 1
+            try:
+                last_day_ts = time.mktime(time.strptime(self.last_check_in_day, "%Y-%m-%d"))
+                # Use current day at 00:00 for comparison to be more robust
+                current_day_ts = time.mktime(time.strptime(current_day, "%Y-%m-%d"))
+                
+                if current_day_ts - last_day_ts <= 86400: # Exactly 1 day or less gap
+                    self.streak += 1
+                else:
+                    # Reset streak if missed more than a day
+                    self.streak = 1
                 self.last_check_in_day = current_day
-            else:
-                # Reset streak if missed a day
+            except Exception:
                 self.streak = 1
                 self.last_check_in_day = current_day
         elif not self.last_check_in_day:
@@ -179,19 +184,29 @@ class SproutPet:
             "is_sleeping": self.is_sleeping,
             "streak": self.streak,
             "gratitude_count": self.gratitude_count,
-            "last_walk_timestamp": self.last_walk_timestamp
+            "last_walk_timestamp": self.last_walk_timestamp,
+            "selected_controller": self.selected_controller
         }
 
     def save(self, filename="sprout_save.json"):
-        with open(filename, 'w') as f:
-            json.dump(self.to_dict(), f)
+        import fcntl
+        try:
+            with open(filename, 'w') as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                json.dump(self.to_dict(), f)
+                fcntl.flock(f, fcntl.LOCK_UN)
+        except Exception as e:
+            print(f"Error saving pet: {e}")
 
     @classmethod
     def load(cls, filename="sprout_save.json"):
         if os.path.exists(filename):
+            import fcntl
             try:
                 with open(filename, 'r') as f:
+                    fcntl.flock(f, fcntl.LOCK_SH)
                     data = json.load(f)
+                    fcntl.flock(f, fcntl.LOCK_UN)
                 pet = cls(data['name'])
                 pet.happiness = data.get('happiness', 50)
                 pet.energy = data.get('energy', 50)
@@ -209,6 +224,7 @@ class SproutPet:
                 pet.streak = data.get('streak', 0)
                 pet.gratitude_count = data.get('gratitude_count', 0)
                 pet.last_walk_timestamp = data.get('last_walk_timestamp', time.time())
+                pet.selected_controller = data.get('selected_controller', None)
                 return pet
             except Exception:
                 return cls()

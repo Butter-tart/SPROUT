@@ -49,11 +49,19 @@ def settings():
     if request.method == 'POST':
         pet.name = request.form.get('name', pet.name)
         pet.theme = request.form.get('theme', pet.theme)
+        pet.selected_controller = request.form.get('controller', pet.selected_controller)
         pet.save(SAVE_FILE)
         flash("Settings updated! ✨")
         return redirect(url_for('settings'))
     
-    return render_template('settings.html', pet=pet.to_dict())
+    devices = []
+    try:
+        import evdev
+        devices = [evdev.InputDevice(path).name for path in evdev.list_devices()]
+    except Exception as e:
+        print(f"Error listing input devices: {e}")
+
+    return render_template('settings.html', pet=pet.to_dict(), devices=devices)
 
 @app.route('/update-device')
 def update_device():

@@ -4,8 +4,9 @@ import os
 import time
 
 class InputHandler:
-    def __init__(self, device_path=None):
-        self.device_path = device_path
+    def __init__(self, target_name=None):
+        self.target_name = target_name
+        self.device_path = None
         self.device = None
         self.running = False
         self.thread = None
@@ -32,11 +33,19 @@ class InputHandler:
         }
 
     def find_controller(self):
-        """Attempts to find the 8BitDo controller among input devices."""
-        devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
-        for device in devices:
-            if "8BitDo Zero 2" in device.name:
-                return device.path
+        """Attempts to find the specified or default controller among input devices."""
+        try:
+            devices = [evdev.InputDevice(path) for path in evdev.list_devices()]
+            for device in devices:
+                if self.target_name:
+                    if self.target_name == device.name:
+                        return device.path
+                else:
+                    # Default fallback
+                    if "8BitDo Zero 2" in device.name:
+                        return device.path
+        except Exception as e:
+            print(f"Error listing devices: {e}")
         return None
 
     def start(self, callback):

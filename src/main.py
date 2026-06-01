@@ -1,7 +1,7 @@
 import sys
 import os
 import time
-
+import threading
 import signal
 
 # Try to import e-paper library if available
@@ -155,6 +155,10 @@ def main():
     menu_options_main = ["Water", "Breathing", "Gratitude", "Social", "Walk", "Sleep", "Settings", "Quit"]
     menu_options_settings = ["Theme: Default", "Theme: Dark", "Theme: High Contrast", "Restart", "Shutdown", "Back"]
 
+    # State for UI refresh
+    refresh_needed = threading.Event()
+    refresh_needed.set() # Initial refresh
+    
     def run_breathing_exercise():
         nonlocal epd, pet
         print("Starting breathing exercise...")
@@ -188,6 +192,7 @@ def main():
         pet.stress = max(0, pet.stress - 20)
         pet.experience += 20
         pet.save(SAVE_FILE)
+        refresh_needed.set() # Refresh screen after exercise
 
     def input_callback(event_type, value):
         nonlocal menu_active, menu_level, menu_selection, pet, epd
@@ -200,25 +205,31 @@ def main():
 
         if event_type == 'KEY_DOWN':
             print(f"Input: {value}")
+            refresh_required = False
             if value == 'START':
                 menu_active = not menu_active
                 menu_level = "Main"
                 menu_selection = 0
+                refresh_required = True
             
             elif value == 'SELECT': # Using SELECT as petting
                 trigger_haptic()
                 pet.pet()
                 pet.save(SAVE_FILE)
                 print("Sprout was petted!")
+                refresh_required = True
             
             elif menu_active:
                 options = get_options()
                 if value == 'DPAD_Y' or value == 'BTN_1': # Up
                     menu_selection = (menu_selection - 1) % len(options)
+                    refresh_required = True
                 elif value == 'BTN_2': # Down
                     menu_selection = (menu_selection + 1) % len(options)
+                    refresh_required = True
                 elif value == 'A':
                     selection = options[menu_selection]
+                    refresh_required = True
                     
                     if menu_level == "Main":
                         if selection == "Water":
@@ -275,6 +286,10 @@ def main():
                 else:
                     pet.start_walk()
                 pet.save(SAVE_FILE)
+                refresh_required = True
+
+            if refresh_required:
+                refresh_needed.set()
 
         elif event_type == 'ABS':
             axis, axis_val = value
@@ -283,12 +298,14 @@ def main():
                 if axis == 'DPAD_Y':
                     if axis_val == -1: # Up
                         menu_selection = (menu_selection - 1) % len(options)
+                        refresh_needed.set()
                     elif axis_val == 1: # Down
                         menu_selection = (menu_selection + 1) % len(options)
+                        refresh_needed.set()
 
     # Start input handler
     if INPUT_AVAILABLE:
-        input_handler = InputHandler()
+        input_handler = InputHandler(target_name=pet.selected_controller)
         # Non-blocking start, will monitor for controller in background
         input_handler.start(input_callback)
     else:
@@ -316,9 +333,21 @@ def main():
     
     try:
         while True:
+            # Wait for either 5 minutes OR a refresh signal from input
+            refresh_needed.wait(timeout=300)
+            refresh_needed.clear()
+            
             pet = SproutPet.load(SAVE_FILE)
             pet.update()
             pet.save(SAVE_FILE)
+            
+            # Update controller if it changed in save file
+            if INPUT_AVAILABLE and 'input_handler' in locals():
+                if input_handler.target_name != pet.selected_controller:
+                    print(f"Controller setting changed to: {pet.selected_controller}. Restarting input handler...")
+                    input_handler.stop()
+                    input_handler = InputHandler(target_name=pet.selected_controller)
+                    input_handler.start(input_callback)
             
             # Render the screen
             print(f"Update cycle started at {time.ctime()}...")
@@ -372,9 +401,9 @@ def main():
             if not loop_mode:
                 break
             
-            # In loop mode, wait before next update (e.g., 5 minutes)
-            print("Loop mode active. Waiting 5 minutes for next update...")
-            time.sleep(300)
+            # In loop mode, wait is now handled by refresh_needed.wait() at the start of loop
+            print("Loop cycle complete. Waiting for next update or input...")
+            # time.sleep(300) - Removed as it's handled by wait()
     finally:
         if EPD_AVAILABLE and epd:
             graceful_shutdown(epd)

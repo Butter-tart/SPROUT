@@ -25,92 +25,83 @@ class Renderer:
         self.draw = ImageDraw.Draw(self.image)
         
     def draw_pet(self, pet_data, x=60, y=60):
-        """Draws a character based on level and status at position (x, y)."""
+        """Draws an ASCII-style character based on level and status at position (x, y)."""
         level = pet_data.get('level', 1)
         status = pet_data.get('status', 'Healthy')
+        is_sleeping = pet_data.get('is_sleeping', False)
         
-        # Simple procedural character
-        cx, cy = x, y
+        # ASCII character sets for different stages
+        # Stage 1: Simple Sprout
+        #   ,vv,
+        #  ( oo )
+        #   \__/
         
-        if level == 1:
-            # Stage 1: Simple Sprout
-            r = 15
-            self.draw.ellipse((cx-r, cy, cx+r, cy+r*2), outline=self.fg_color, fill=self.bg_color) # Pot/Base
-            self.draw.line((cx, cy, cx, cy-15), fill=self.fg_color, width=2) # Stem
-            self.draw.ellipse((cx-8, cy-18, cx, cy-12), outline=self.fg_color) # Leaf 1
-            self.draw.ellipse((cx, cy-18, cx+8, cy-12), outline=self.fg_color) # Leaf 2
-        
-        elif level == 2:
-            # Stage 2: Bud
-            r = 20
-            self.draw.ellipse((cx-r, cy+5, cx+r, cy+r*2+5), outline=self.fg_color, fill=self.bg_color) # Pot
-            self.draw.line((cx, cy+5, cx, cy-20), fill=self.fg_color, width=2) # Stem
-            # Leaves
-            self.draw.ellipse((cx-12, cy-10, cx, cy-5), outline=self.fg_color)
-            self.draw.ellipse((cx, cy-10, cx+12, cy-5), outline=self.fg_color)
-            # Bud
-            self.draw.ellipse((cx-8, cy-28, cx+8, cy-20), outline=self.fg_color, fill=self.bg_color)
-            
-        elif level == 3:
-            # Stage 3: Small Flower
-            r = 25
-            self.draw.ellipse((cx-r, cy+10, cx+r, cy+r*2+10), outline=self.fg_color, fill=self.bg_color) # Pot
-            self.draw.line((cx, cy+10, cx, cy-25), fill=self.fg_color, width=3) # Stem
-            # Flower petals
-            pr = 10
-            self.draw.ellipse((cx-pr, cy-35, cx+pr, cy-15), outline=self.fg_color) # Center
-            for i in range(4):
-                import math
-                angle = i * (math.pi / 2)
-                px = cx + math.cos(angle) * 12
-                py = cy - 25 + math.sin(angle) * 12
-                self.draw.ellipse((px-8, py-8, px+8, py+8), outline=self.fg_color)
+        # Stage 2: Bud
+        #    ()
+        #  --/--
+        #  |oo |
+        #  \___/
 
-        else:
-            # Stage 4: Big Flower
-            r = 30
-            self.draw.ellipse((cx-r, cy+15, cx+r, cy+r*2+15), outline=self.fg_color, fill=self.bg_color) # Pot
-            self.draw.line((cx, cy+15, cx, cy-30), fill=self.fg_color, width=4) # Stem
-            # Large Flower
-            cr = 12
-            self.draw.ellipse((cx-cr, cy-42, cx+cr, cy-18), outline=self.fg_color, fill=self.bg_color) # Center
-            for i in range(6):
-                import math
-                angle = i * (math.pi / 3)
-                px = cx + math.cos(angle) * 20
-                py = cy - 30 + math.sin(angle) * 20
-                self.draw.ellipse((px-10, py-10, px+10, py+10), outline=self.fg_color)
-
-        # Eyes and Mouth on the "main" part (depends on level)
-        eye_y = cy - 8 if level == 1 else cy - 24 if level == 2 else cy - 25 if level == 3 else cy - 30
-        eye_x_off = 5 if level == 1 else 4
+        # Stage 3: Flower
+        #   wWw
+        #  (o o)
+        #  --|--
+        #  |___|
         
-        if pet_data.get('is_sleeping'):
-            # Sleeping eyes (closed)
-            self.draw.line((cx-eye_x_off-3, eye_y, cx-eye_x_off+3, eye_y), fill=self.fg_color, width=1)
-            self.draw.line((cx+eye_x_off-3, eye_y, cx+eye_x_off+3, eye_y), fill=self.fg_color, width=1)
-            # Small "o" mouth
-            self.draw.ellipse((cx-2, eye_y+4, cx+2, eye_y+8), outline=self.fg_color)
-            return
-
-        # Eyes
-        if status == "Needs Sun":
-            self.draw.ellipse((cx-eye_x_off-2, eye_y-2, cx-eye_x_off+2, eye_y+2), fill=self.fg_color)
-            self.draw.ellipse((cx+eye_x_off-2, eye_y-2, cx+eye_x_off+2, eye_y+2), fill=self.fg_color)
+        # Build ASCII lines
+        ascii_lines = []
+        
+        # Eyes/Mouth Logic
+        if is_sleeping:
+            eyes = "- -"
+            mouth = "o"
         elif status == "Tired":
-            self.draw.line((cx-eye_x_off-3, eye_y, cx-eye_x_off+3, eye_y), fill=self.fg_color, width=1)
-            self.draw.line((cx+eye_x_off-3, eye_y, cx+eye_x_off+3, eye_y), fill=self.fg_color, width=1)
-        else:
-            self.draw.ellipse((cx-eye_x_off-2, eye_y-2, cx-eye_x_off+2, eye_y+2), fill=self.fg_color)
-            self.draw.ellipse((cx+eye_x_off-2, eye_y-2, cx+eye_x_off+2, eye_y+2), fill=self.fg_color)
-            
-        # Mouth
-        if status in ["Healthy", "Needs Sun"]:
-            self.draw.arc((cx-5, eye_y+2, cx+5, eye_y+8), 0, 180, fill=self.fg_color)
+            eyes = "x x"
+            mouth = "-"
         elif status == "Stressed":
-            self.draw.line((cx-5, eye_y+5, cx+5, eye_y+5), fill=self.fg_color, width=1)
-        else:
-            self.draw.arc((cx-5, eye_y+5, cx+5, eye_y+10), 180, 0, fill=self.fg_color)
+            eyes = "o o"
+            mouth = "~"
+        elif status == "Needs Sun":
+            eyes = "O O"
+            mouth = "u"
+        else: # Healthy
+            eyes = "^ ^"
+            mouth = "v"
+
+        if level == 1:
+            ascii_lines = [
+                "  ,vv,  ",
+                f" ( {eyes} ) ",
+                f"  \\_{mouth}_/  "
+            ]
+        elif level == 2:
+            ascii_lines = [
+                "    ()    ",
+                "  --/--   ",
+                f" | {eyes} |  ",
+                f" \\__{mouth}__/  "
+            ]
+        elif level == 3:
+            ascii_lines = [
+                "   wWw    ",
+                f"  ({eyes})   ",
+                " --/|\\--  ",
+                f" | {mouth} |   ",
+                " \\___/   "
+            ]
+        else: # level 4+
+            ascii_lines = [
+                " _\\(_)/_  ",
+                "  >@ @<   ",
+                f" ({eyes})  ",
+                f" --{mouth}--  ",
+                "  /   \\   "
+            ]
+
+        # Render ASCII lines
+        line_height = 12
+        for i, line in enumerate(ascii_lines):
+            self.draw.text((x - 20, y - 30 + i * line_height), line, fill=self.fg_color)
 
     def draw_static_loading(self):
         """Draws a static loading screen."""
@@ -173,9 +164,13 @@ class Renderer:
             import random
             # Use a seed based on day for a daily affirmation
             current_day = int(time.time() / 86400)
-            random.seed(current_day)
+            # Re-seed with local time day to ensure it changes properly
+            local_day = time.localtime().tm_yday
+            random.seed(local_day)
             aff = random.choice(affirmations)
             self.draw.text((10, self.height - 15), aff, fill=self.fg_color)
+            # Reset seed to avoid affecting other random calls if any
+            random.seed()
 
     def draw_rain(self, x, y):
         """Draws a small cloud with rain."""
