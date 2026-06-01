@@ -2,11 +2,14 @@
 
 # SPROUT Autoboot Installation Script
 
+# Get the directory where this script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+USER_NAME=$(logname || echo $USER)
+INSTALL_DIR="$SCRIPT_DIR"
+
 # Define variables
 SERVICE_NAME="sprout.service"
 WEBAPP_SERVICE_NAME="sprout-webapp.service"
-INSTALL_DIR="/home/pi/SPROUT"
-USER_NAME="pi"
 
 # Check if running as root
 if [ "$EUID" -ne 0 ]; then
@@ -15,6 +18,8 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Installing SPROUT autoboot service..."
+echo "Detected Installation Directory: $INSTALL_DIR"
+echo "Detected User: $USER_NAME"
 
 # 0. Install system dependencies
 echo "Installing system dependencies..."
@@ -28,20 +33,60 @@ if ! python3 -c "import waveshare_epd" 2>/dev/null; then
 fi
 
 # 1. Ensure SPI is enabled (non-interactive)
-if ! grep -q "dtparam=spi=on" /boot/config.txt; then
-  echo "Enabling SPI in /boot/config.txt..."
-  echo "dtparam=spi=on" >> /boot/config.txt
-  echo "SPI enabled. A reboot might be required if it wasn't already on."
+if [ -f /boot/config.txt ]; then
+    if ! grep -q "dtparam=spi=on" /boot/config.txt; then
+      echo "Enabling SPI in /boot/config.txt..."
+      echo "dtparam=spi=on" >> /boot/config.txt
+      echo "SPI enabled. A reboot might be required if it wasn't already on."
+    fi
+elif [ -f /boot/firmware/config.txt ]; then
+    if ! grep -q "dtparam=spi=on" /boot/firmware/config.txt; then
+      echo "Enabling SPI in /boot/firmware/config.txt..."
+      echo "dtparam=spi=on" >> /boot/firmware/config.txt
+      echo "SPI enabled. A reboot might be required if it wasn't already on."
+    fi
 fi
 
-# 2. Update WorkingDirectory and User in the service file if necessary
-# We assume the user might have named their user differently or put it in a different spot, 
-# but for RPi zero the default is usually /home/pi/SPROUT.
-# We'll stick to the provided sprout.service template but make sure paths exist.
+# 2. Prepare service files with correct paths and user
+echo "Configuring service files..."
 
-# 2. Copy service files to systemd directory
-cp $SERVICE_NAME /etc/systemd/system/$SERVICE_NAME
-cp $WEBAPP_SERVICE_NAME /etc/systemd/system/$WEBAPP_SERVICE_NAME
+# Sprout Service
+cat > /etc/systemd/system/$SERVICE_NAME <<EOF
+[Unit]
+Description=SPROUT Mental Health Tamagotchi
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 $INSTALL_DIR/src/main.py --loop
+WorkingDirectory=$INSTALL_DIR
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=$USER_NAME
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+# Webapp Service
+cat > /etc/systemd/system/$WEBAPP_SERVICE_NAME <<EOF
+[Unit]
+Description=SPROUT Web Interface
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/python3 $INSTALL_DIR/src/webapp.py
+WorkingDirectory=$INSTALL_DIR
+StandardOutput=inherit
+StandardError=inherit
+Restart=always
+User=$USER_NAME
+
+[Install]
+WantedBy=multi-user.target
+EOF
 
 # 3. Reload systemd to recognize the new services
 systemctl daemon-reload
