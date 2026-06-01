@@ -13,6 +13,12 @@ Mental health companion for Raspberry Pi Zero 2 WH & Waveshare e-Paper.
 4. **Flask**: `pip3 install flask`
 5. **Run**: `python3 src/main.py` & `python3 src/webapp.py` (port 8080).
 
+## Web App
+The SPROUT web interface allows you to interact with your pet from any device on your local network.
+
+- **URL**: `http://<your-pi-ip-address>:8080`
+- **Port**: `8080`
+
 ## Controller
 - `bluetoothctl`: `scan on`, `pair [MAC]`, `trust [MAC]`, `connect [MAC]`.
 - **START**: Menu | **A**: Select/Walk.
