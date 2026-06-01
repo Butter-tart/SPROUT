@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SPROUT Web App</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f0f8f0;
+            color: #2c3e50;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+        h1 { color: #27ae60; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .stat-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 5px solid #27ae60;
+        }
+        .stat-label { font-weight: bold; font-size: 0.9em; color: #7f8c8d; }
+        .stat-value { font-size: 1.2em; font-weight: bold; }
+        .pet-status {
+            font-size: 1.5em;
+            margin: 20px 0;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            color: #2e7d32;
+        }
+        .actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
+        }
+        .btn-water { background-color: #3498db; }
+        .btn-water:hover { background-color: #2980b9; }
+        .btn-pet { background-color: #e74c3c; }
+        .btn-pet:hover { background-color: #c0392b; }
+        .btn-social { background-color: #f1c40f; color: #2c3e50; }
+        .btn-social:hover { background-color: #f39c12; }
+        .btn-gratitude { background-color: #9b59b6; }
+        .btn-gratitude:hover { background-color: #8e44ad; }
+        .btn-sleep { background-color: #34495e; grid-column: span 2; }
+        .btn-sleep:hover { background-color: #2c3e50; }
+        
+        .flash {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Sprout: {{ pet.name }}</h1>
+        
+        {% with messages = get_flashed_messages() %}
+          {% if messages %}
+            {% for message in messages %}
+              <div class="flash">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="pet-status">
+            Status: <strong>{{ pet.status }}</strong>
+            {% if pet.is_sleeping %}(Sleeping 💤){% endif %}
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-item">
+                <div class="stat-label">Happiness</div>
+                <div class="stat-value">{{ pet.happiness }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Energy</div>
+                <div class="stat-value">{{ pet.energy }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Sunshine</div>
+                <div class="stat-value">{{ pet.sunshine }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Hydration</div>
+                <div class="stat-value">{{ pet.hydration }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Social</div>
+                <div class="stat-value">{{ pet.social }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Stress</div>
+                <div class="stat-value">{{ pet.stress }}%</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Level</div>
+                <div class="stat-value">{{ pet.level }} (XP: {{ pet.experience }})</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Streak</div>
+                <div class="stat-value">{{ pet.streak }} days</div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a href="{{ url_for('action', name='water') }}" class="btn btn-water">Water</a>
+            <a href="{{ url_for('action', name='pet') }}" class="btn btn-pet">Pet</a>
+            <a href="{{ url_for('action', name='socialize') }}" class="btn btn-social">Socialize</a>
+            <a href="{{ url_for('action', name='gratitude') }}" class="btn btn-gratitude">Gratitude</a>
+            <a href="{{ url_for('action', name='sleep') }}" class="btn btn-sleep">
+                {% if pet.is_sleeping %}Wake Up{% else %}Go to Sleep{% endif %}
+            </a>
+        </div>
+        
+        <p><small>Last updated: {{ pet.last_update }}</small></p>
+    </div>
+</body>
+</html>

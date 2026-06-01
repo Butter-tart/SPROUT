@@ -13,6 +13,7 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
 - **Settings Menu**: Customize your experience with different themes (Default, Dark, High Contrast).
 - **System Controls**: Shutdown or Restart your Raspberry Pi directly from the SPROUT menu.
 - **Walk Timer**: Start and stop a walk timer to track your outdoor activity and boost Sprout's health.
+- **Web App Companion**: Access Sprout from any device on your network! Care for your pet via a web interface that syncs with your physical device.
 - **E-Ink Optimized**: Low power consumption and easy on the eyes.
 
 ## Installation on Raspberry Pi
@@ -46,6 +47,23 @@ SPROUT is a mental health companion designed for the Raspberry Pi Zero 2 WH and 
    ```bash
    python3 src/main.py
    ```
+
+## Web App Companion
+
+SPROUT now includes a web application that allows you to care for your pet from any browser on your local network.
+
+1. **Install Flask**:
+   ```bash
+   pip3 install flask
+   ```
+
+2. **Run the Web App**:
+   ```bash
+   python3 src/webapp.py
+   ```
+   By default, it will be available at `http://[your-pi-ip]:5000`.
+
+3. **Care from anywhere**: You can water, pet, and check on Sprout's stats from your phone or computer. Changes are synced with the physical device.
 
 ## 8BitDo Zero 2 Controller Setup
 

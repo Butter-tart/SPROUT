@@ -1,5 +1,6 @@
 from PIL import Image, ImageDraw, ImageFont
 import os
+import time
 
 class Renderer:
     def __init__(self, width=250, height=122, theme="Default"):
@@ -84,6 +85,14 @@ class Renderer:
         eye_y = cy - 8 if level == 1 else cy - 24 if level == 2 else cy - 25 if level == 3 else cy - 30
         eye_x_off = 5 if level == 1 else 4
         
+        if pet_data.get('is_sleeping'):
+            # Sleeping eyes (closed)
+            self.draw.line((cx-eye_x_off-3, eye_y, cx-eye_x_off+3, eye_y), fill=self.fg_color, width=1)
+            self.draw.line((cx+eye_x_off-3, eye_y, cx+eye_x_off+3, eye_y), fill=self.fg_color, width=1)
+            # Small "o" mouth
+            self.draw.ellipse((cx-2, eye_y+4, cx+2, eye_y+8), outline=self.fg_color)
+            return
+
         # Eyes
         if status == "Needs Sun":
             self.draw.ellipse((cx-eye_x_off-2, eye_y-2, cx-eye_x_off+2, eye_y+2), fill=self.fg_color)
@@ -127,30 +136,87 @@ class Renderer:
     def draw_stats(self, pet_data):
         """Draws health bars and status text."""
         margin = 130
-        y_start = 5 # Moved up to fit more
+        y_start = 2 # Moved up slightly more
         
-        # Name
+        # Name & XP
         self.draw.text((margin, y_start), f"Name: {pet_data['name']}", fill=self.fg_color)
         self.draw.text((margin + 80, y_start), f"Lv: {pet_data.get('level', 1)}", fill=self.fg_color)
         
         # Stats bars
-        self.draw_bar(margin, y_start + 18, "Hap", pet_data['happiness'])
-        self.draw_bar(margin, y_start + 34, "Enr", pet_data['energy'])
-        self.draw_bar(margin, y_start + 50, "Str", pet_data['stress'])
-        self.draw_bar(margin, y_start + 66, "Sun", pet_data['sunshine'])
+        self.draw_bar(margin, y_start + 12, "Hap", pet_data['happiness'])
+        self.draw_bar(margin, y_start + 24, "Enr", pet_data['energy'])
+        self.draw_bar(margin, y_start + 36, "Str", pet_data['stress'])
+        self.draw_bar(margin, y_start + 48, "Sun", pet_data['sunshine'])
+        self.draw_bar(margin, y_start + 60, "Wat", pet_data.get('hydration', 50))
+        self.draw_bar(margin, y_start + 72, "Soc", pet_data.get('social', 50))
         
         # Status text
         self.draw.text((margin, y_start + 85), f"Status: {pet_data['status']}", fill=self.fg_color)
 
-        # Walk Time
+        # Walk Time & Streak
         walk_text = f"Walk: {int(pet_data.get('walk_time_today', 0))}m"
         if pet_data.get('is_walking'):
-            walk_text += " [ACTIVE]"
-        self.draw.text((margin, y_start + 101), walk_text, fill=self.fg_color)
+            walk_text += " [ACT]"
+        self.draw.text((margin, y_start + 96), walk_text, fill=self.fg_color)
         
-        # Decorative Sun if sunshine is high
+        streak_text = f"Streak: {pet_data.get('streak', 0)}d Grat: {pet_data.get('gratitude_count', 0)}"
+        self.draw.text((margin, y_start + 107), streak_text, fill=self.fg_color)
+        
+        # Decorative icons
         if pet_data['sunshine'] > 70:
             self.draw_sun(20, 20)
+        elif pet_data.get('hydration', 50) > 80:
+            self.draw_rain(20, 20)
+        
+        # Affirmation
+        if not pet_data.get('is_sleeping'):
+            affirmations = [
+                "You are doing great!",
+                "Keep growing!",
+                "Take a deep breath.",
+                "You are enough.",
+                "Today is a new day."
+            ]
+            import random
+            # Use seed based on day to keep it consistent for the day if possible, 
+            # but here we'll just pick one.
+            aff = affirmations[int(time.time() / 3600) % len(affirmations)]
+            self.draw.text((5, self.height - 12), aff, fill=self.fg_color)
+
+    def draw_rain(self, x, y):
+        """Draws a small cloud with rain."""
+        self.draw.ellipse((x-10, y-5, x+10, y+5), outline=self.fg_color, fill=self.bg_color)
+        self.draw.ellipse((x-5, y-8, x+5, y), outline=self.fg_color, fill=self.bg_color)
+        for i in range(3):
+            rx = x - 6 + i*6
+            self.draw.line((rx, y+6, rx-2, y+10), fill=self.fg_color)
+
+    def draw_breathing_frame(self, progress, text="Breathe In"):
+        """progress 0.0 to 1.0 (one full breath cycle)"""
+        import math
+        self.image = Image.new('1', (self.width, self.height), self.bg_color)
+        self.draw = ImageDraw.Draw(self.image)
+        
+        # Breathing scale effect
+        # 0 -> 0.5 (In), 0.5 -> 1.0 (Out)
+        if progress < 0.5:
+            scale = 0.8 + (progress * 2) * 0.4 # 0.8 to 1.2
+            current_text = "Breathe In..."
+        else:
+            scale = 1.2 - ((progress - 0.5) * 2) * 0.4 # 1.2 to 0.8
+            current_text = "Breathe Out..."
+            
+        # Draw pet centered and scaled
+        cx, cy = self.width // 2, self.height // 2
+        # Simple scaling by moving y or just drawing a bigger one? 
+        # Let's just adjust y for a "lifting" effect
+        y_off = int((scale - 1.0) * 20)
+        self.draw_pet({"level": 3, "status": "Healthy"}, cx, cy - y_off)
+        
+        # Text
+        self.draw.text((cx - 40, 10), current_text, fill=self.fg_color)
+        self.draw.rectangle((20, self.height - 15, self.width - 20, self.height - 5), outline=self.fg_color)
+        self.draw.rectangle((20, self.height - 15, 20 + int(progress * (self.width - 40)), self.height - 5), fill=self.fg_color)
 
     def draw_sun(self, x, y):
         """Draws a small sun icon."""

@@ -75,8 +75,28 @@ def check_hardware():
         print("Pillow library: INSTALLED")
     except ImportError:
         print("Pillow library: NOT FOUND")
+
+    # Mock Haptics/LED check
+    print("Haptics Interface: NOT DETECTED (Using dummy hooks)")
+    print("LED Interface: ONBOARD ONLY")
     print("---------------------------\n")
     return spi_enabled
+
+def trigger_haptic():
+    """Dummy hook for haptic feedback."""
+    print("[HAPTIC] *Bzzzt*")
+
+def set_led(r, g, b):
+    """Dummy hook for RGB LED control."""
+    print(f"[LED] Setting color to ({r}, {g}, {b})")
+
+def get_mock_weather():
+    """Mock weather service."""
+    # In a real app, this would use an API or local sensor
+    hour = time.localtime().tm_hour
+    if 6 <= hour <= 18:
+        return "Sunny"
+    return "Clear Night"
 
 def graceful_shutdown(epd):
     """Clear screen and put to sleep before exiting."""
@@ -159,13 +179,47 @@ def main():
     
     # Menu State
     menu_active = False
-    menu_level = "Main" # Main, Settings
+    menu_level = "Main" # Main, Settings, Breathing
     menu_selection = 0
-    menu_options_main = ["Walk Timer", "Settings", "Restart", "Shutdown", "Cancel"]
+    menu_options_main = ["Water", "Breathing", "Gratitude", "Social", "Walk Timer", "Sleep", "Settings", "Restart", "Shutdown", "Cancel"]
     menu_options_settings = ["Theme: Default", "Theme: Dark", "Theme: High Contrast", "Back"]
-    
+
+    def run_breathing_exercise():
+        nonlocal epd, pet
+        print("Starting breathing exercise...")
+        trigger_haptic()
+        duration = 30 # seconds
+        start_time = time.time()
+        while time.time() - start_time < duration:
+            progress = ((time.time() - start_time) % 6) / 6 # 6 second breath cycle
+            
+            # LED feedback for breathing
+            if progress < 0.5:
+                set_led(0, 0, int(progress * 2 * 255)) # Blue fade in
+            else:
+                set_led(0, 0, int((1.0 - progress) * 2 * 255)) # Blue fade out
+
+            renderer = Renderer(theme=pet.theme)
+            renderer.draw_breathing_frame(progress)
+            
+            if EPD_AVAILABLE and epd:
+                # Use partial update if possible for animation
+                epd.init()
+                epd.display(epd.getbuffer(renderer.get_image()))
+                epd.sleep()
+            else:
+                renderer.save_preview("sprout_display_preview.png")
+                time.sleep(0.5)
+            
+            # Allow break? For now just run
+        trigger_haptic()
+        set_led(0, 0, 0)
+        pet.stress = max(0, pet.stress - 20)
+        pet.experience += 20
+        pet.save()
+
     def input_callback(event_type, value):
-        nonlocal menu_active, menu_level, menu_selection, pet
+        nonlocal menu_active, menu_level, menu_selection, pet, epd
         
         # Helper to get current options
         def get_options():
@@ -180,6 +234,12 @@ def main():
                 menu_level = "Main"
                 menu_selection = 0
             
+            elif value == 'SELECT': # Using SELECT as petting
+                trigger_haptic()
+                pet.pet()
+                pet.save()
+                print("Sprout was petted!")
+            
             elif menu_active:
                 options = get_options()
                 if value == 'DPAD_Y' or value == 'BTN_1': # Up
@@ -190,13 +250,29 @@ def main():
                     selection = options[menu_selection]
                     
                     if menu_level == "Main":
-                        if selection == "Walk Timer":
+                        if selection == "Water":
+                            trigger_haptic()
+                            pet.water()
+                            menu_active = False
+                        elif selection == "Breathing":
+                            menu_active = False
+                            run_breathing_exercise()
+                        elif selection == "Gratitude":
+                            trigger_haptic()
+                            pet.record_gratitude()
+                            menu_active = False
+                        elif selection == "Social":
+                            trigger_haptic()
+                            pet.socialize()
+                            menu_active = False
+                        elif selection == "Walk Timer":
                             if pet.is_walking:
                                 pet.stop_walk()
-                                print("Walking stopped.")
                             else:
                                 pet.start_walk()
-                                print("Walking started!")
+                            menu_active = False
+                        elif selection == "Sleep":
+                            pet.toggle_sleep()
                             menu_active = False
                         elif selection == "Settings":
                             menu_level = "Settings"
@@ -215,10 +291,9 @@ def main():
                             new_theme = selection.split(": ")[1]
                             pet.theme = new_theme
                             print(f"Theme changed to {new_theme}")
-                            # Keep menu open to show change, or close? Let's stay in settings
                         elif selection == "Back":
                             menu_level = "Main"
-                            menu_selection = 1 # Back to Settings option
+                            menu_selection = 6 # Back to Settings option
                     
                     pet.save()
             
@@ -274,9 +349,16 @@ def main():
             pet.save()
             
             # Render the screen
+            weather = get_mock_weather()
             renderer = Renderer(theme=pet.theme)
             renderer.draw_pet(pet.to_dict())
             renderer.draw_stats(pet.to_dict())
+            
+            # Show weather info if relevant
+            if weather == "Sunny" and pet.sunshine < 50:
+                renderer.draw.text((5, 35), "Go outside!", fill=renderer.fg_color)
+            elif "Night" in weather and not pet.is_sleeping:
+                renderer.draw.text((5, 35), "Time for bed?", fill=renderer.fg_color)
             
             if menu_active:
                 options = menu_options_settings if menu_level == "Settings" else menu_options_main
